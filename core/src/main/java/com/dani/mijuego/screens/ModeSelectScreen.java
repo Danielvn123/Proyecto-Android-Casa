@@ -18,6 +18,8 @@ import com.dani.mijuego.Main;
 import com.dani.mijuego.assets.Assets;
 import com.dani.mijuego.game.GameConfig;
 import com.dani.mijuego.util.UiHit;
+import com.dani.mijuego.game.I18n;
+
 
 public class ModeSelectScreen extends BaseScreen {
 
@@ -101,7 +103,7 @@ public class ModeSelectScreen extends BaseScreen {
 
         float btnW = 750f;
         float btnH = 300f;
-        float gap  = 70f;
+        float gap  = 150f;
 
         float cx = (w - btnW) / 2f;
 
@@ -175,12 +177,12 @@ public class ModeSelectScreen extends BaseScreen {
         drawButtonScaled(b1, r1, s1);
         drawButtonScaled(b2, r2, s2);
 
-        // Título
-        drawTitle("MODO DE JUEGO", h * 0.82f);
+        drawTitle(I18n.t("mode_title"), h * 0.82f);
 
         // Textos botones
-        drawButtonText("INFINITO", r1, s1);
-        drawButtonText("NIVELES", r2, s2);
+        drawButtonText(I18n.t("mode_infinite"), r1, s1);
+        drawButtonText(I18n.t("mode_normal"), r2, s2);
+
 
         batch.end();
     }
@@ -268,7 +270,7 @@ public class ModeSelectScreen extends BaseScreen {
         float uiLeft = cam.position.x - viewport.getWorldWidth() / 2f;
         float uiBottom = cam.position.y - viewport.getWorldHeight() / 2f;
 
-        float scale = 2.2f * btnScale;
+        float scale = 3.5f * btnScale;
         fillFont.getData().setScale(scale);
         outlineFont.getData().setScale(scale);
 

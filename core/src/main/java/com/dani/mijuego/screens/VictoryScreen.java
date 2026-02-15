@@ -13,6 +13,7 @@ import com.dani.mijuego.Main;
 import com.dani.mijuego.assets.Assets;
 import com.dani.mijuego.game.GameAudio;
 import com.dani.mijuego.game.GameConfig;
+import com.dani.mijuego.game.I18n;
 import com.dani.mijuego.util.FontUtils;
 
 public class VictoryScreen extends BaseScreen {
@@ -62,7 +63,7 @@ public class VictoryScreen extends BaseScreen {
             public boolean keyDown(int keycode) {
                 if (keycode == Input.Keys.SPACE || keycode == Input.Keys.ENTER ||
                     keycode == Input.Keys.ESCAPE || keycode == Input.Keys.BACK) {
-                    audio.playSelectButton();
+                    if (audio != null) audio.playSelectButton();
                     game.setScreen(new MenuScreen(game));
                     return true;
                 }
@@ -72,7 +73,7 @@ public class VictoryScreen extends BaseScreen {
             @Override
             public boolean touchDown(int screenX, int screenY, int pointer, int button) {
                 Vector3 hud = unprojectToHud(screenX, screenY);
-                audio.playSelectButton();
+                if (audio != null) audio.playSelectButton();
                 game.setScreen(new MenuScreen(game));
                 return true;
             }
@@ -99,7 +100,7 @@ public class VictoryScreen extends BaseScreen {
         outlineFont.getData().setScale(titleScale);
         fillFont.getData().setScale(titleScale);
 
-        String title = "VICTORIA";
+        String title = I18n.t("victory_title");
         layout.setText(fillFont, title);
 
         float x = cam.position.x - layout.width / 2f;
@@ -111,7 +112,10 @@ public class VictoryScreen extends BaseScreen {
         outlineFont.getData().setScale(infoScale);
         fillFont.getData().setScale(infoScale);
 
-        String info = "ALTURA: " + score + " m\nMONEDAS: " + coins;
+        String info =
+            I18n.t("victory_height") + " " + score + " m\n" +
+                I18n.t("victory_coins") + " " + coins;
+
         layout.setText(fillFont, info);
 
         float ix = cam.position.x - layout.width / 2f;
@@ -123,7 +127,7 @@ public class VictoryScreen extends BaseScreen {
         outlineFont.getData().setScale(tipScale);
         fillFont.getData().setScale(tipScale);
 
-        String tip = "PULSA PARA VOLVER AL MENU";
+        String tip = I18n.t("victory_tip");
         layout.setText(fillFont, tip);
 
         float tx = cam.position.x - layout.width / 2f;

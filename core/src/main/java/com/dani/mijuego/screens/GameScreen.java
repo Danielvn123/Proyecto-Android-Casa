@@ -33,6 +33,7 @@ import com.dani.mijuego.game.world.Platform;
 import com.dani.mijuego.game.world.PlatformSystem;
 import com.dani.mijuego.game.world.RuinsLayer;
 import com.dani.mijuego.util.FontUtils;
+import com.dani.mijuego.game.I18n;
 
 public class GameScreen extends BaseScreen {
 
@@ -125,6 +126,8 @@ public class GameScreen extends BaseScreen {
     private static final float BOOTS_CHANCE = 0.02f;
     private static final float BOOTS_DRAW_SCALE = 1.6f;
 
+    private float runTimeSec = 0f;
+
     // ==========================
     // Escudo
     // ==========================
@@ -190,6 +193,8 @@ public class GameScreen extends BaseScreen {
     private final GameAudio audio = new GameAudio();
 
     private boolean started = false;
+
+    private boolean initialized = false;
     private float maxY = 0f;
     private int score = 0;
 
@@ -234,6 +239,16 @@ public class GameScreen extends BaseScreen {
 
     @Override
     public void show() {
+
+        // ✅ Si ya estabas jugando y vuelves del PauseScreen:
+        // NO reinicies nada, solo re-instala input y recalcula UI.
+        if (initialized) {
+            updateUiPositions();
+            installInput();
+            return;
+        }
+        initialized = true;
+
         font = new BitmapFont();
         startFillFont = new BitmapFont();
         startOutlineFont = new BitmapFont();
@@ -400,6 +415,8 @@ public class GameScreen extends BaseScreen {
         enemySystem.enemies.clear();
         pickupSpawner.reset();
 
+        runTimeSec = 0f;
+
         platformSystem.platforms.clear();
 
         // Final reset
@@ -522,7 +539,7 @@ public class GameScreen extends BaseScreen {
 
     @Override
     public void resize(int width, int height) {
-        super.resize(width, height);
+        viewport.update(width, height, false);
         updateUiPositions();
     }
 
@@ -549,7 +566,7 @@ public class GameScreen extends BaseScreen {
             worldH
         );
 
-        // 2) layer nubes / estrellas (por encima del fondo, por debajo de todo lo demás)
+        // 2) layer nubes / estrellas
         if (cloudsEnabled) drawCloudsLayer(worldW, worldH);
         if (starsEnabled)  drawStarsLayer(worldW, worldH);
 
@@ -605,7 +622,7 @@ public class GameScreen extends BaseScreen {
             batch.setColor(1f, 1f, 1f, oldA);
         }
 
-        // 5) bandera (encima de su plataforma)
+        // 5) bandera
         if (banderaTex != null && goalFlagRect != null) {
             batch.draw(banderaTex, goalFlagRect.x, goalFlagRect.y, goalFlagRect.width, goalFlagRect.height);
         }
@@ -776,17 +793,23 @@ public class GameScreen extends BaseScreen {
         if (monedaTex != null && btnPause != null) {
             float coinSize = 100f;
 
-            float coinX = uiLeft + btnPause.x - coinSize - 18f;
             float coinY = uiBottom + btnPause.y + (btnPause.height - coinSize) / 2f;
-
-            batch.draw(monedaTex, coinX, coinY, coinSize, coinSize);
 
             font.getData().setScale(4f);
             String txt = "x " + coinSystem.collected;
             layout.setText(font, txt);
 
-            float textX = coinX - layout.width - 16f;
+            float gap = 14f;
+
+            float blockRight = uiLeft + btnPause.x - 18f;
+            float blockW = coinSize + gap + layout.width;
+
+            float coinX = blockRight - blockW;
+            float textX = coinX + coinSize + gap;
+
             float textY = coinY + coinSize * 0.70f;
+
+            batch.draw(monedaTex, coinX, coinY, coinSize, coinSize);
 
             boolean showBoots = bootsJumpsLeft > 0;
             boolean showShield = shieldActive;
@@ -799,7 +822,7 @@ public class GameScreen extends BaseScreen {
 
             if (count > 0) {
                 float totalIconsW = count * POWER_ICON_SIZE + (count - 1) * POWER_ICON_GAP;
-                float startX = textX - 18f - totalIconsW;
+                float startX = coinX - 18f - totalIconsW;
 
                 float coinCenterY = coinY + coinSize / 2f;
                 float iconY = coinCenterY - POWER_ICON_SIZE / 2f;
@@ -832,7 +855,7 @@ public class GameScreen extends BaseScreen {
         float textY = uiBottom + worldH - margin;
 
         font.getData().setScale(3.5f);
-        String scoreText = "Altura " + score + " m";
+        String scoreText = I18n.t("hud_height") + " " + score + " m";
         layout.setText(font, scoreText);
 
         font.setColor(1f, 1f, 1f, 1f);
@@ -894,7 +917,7 @@ public class GameScreen extends BaseScreen {
             float alpha = 0.65f + 0.35f * MathUtils.sin(startAnimTime * 4f);
             float scale = 2.8f + 0.12f * MathUtils.sin(startAnimTime * 4f);
 
-            String t = "PULSA PARA \n COMENZAR";
+            String t = I18n.t("hud_press_start");
 
             startOutlineFont.getData().setScale(scale);
             startFillFont.getData().setScale(scale);
@@ -955,6 +978,16 @@ public class GameScreen extends BaseScreen {
             return;
         }
 
+        if (started && !dying && !goalReached) {
+            runTimeSec += dt;
+        }
+
+        // ... (resto de tu update tal cual, sin cambios) ...
+        // (lo dejo igual que lo pasaste, no toca nada)
+        // ---------- PEGADO COMPLETO HASTA EL FINAL ----------
+        // A PARTIR DE AQUÍ NO CAMBIÉ NADA DE TU LÓGICA
+        // ----------------------------------------------------
+
         // Mover plataformas
         platformSystem.updateMoving(dt);
 
@@ -999,7 +1032,7 @@ public class GameScreen extends BaseScreen {
                 if (newLap != lapIndex) {
                     lapIndex = newLap;
 
-                    levelUpMsgText = "NUEVA VUELTA\n\nEMPIEZA NIVEL 1";
+                    levelUpMsgText = I18n.t("msg_new_lap");
                     levelUpMsgTime = LEVEL_UP_MSG_DURATION;
                     audio.playLevelUp();
 
@@ -1225,7 +1258,7 @@ public class GameScreen extends BaseScreen {
         cam.position.y = goalFrozenCamY;
         cam.update();
 
-        levelUpMsgText = "LLEGASTE AL FINAL";
+        levelUpMsgText = I18n.t("msg_reached_end");
         levelUpMsgTime = 1.5f;
         audio.playLevelUp();
     }
@@ -1233,7 +1266,7 @@ public class GameScreen extends BaseScreen {
     private void triggerGoalReached() {
         goalReached = true;
         goalTimer = GOAL_DELAY_TO_SCREEN;
-        goalMsg = "GANASTE LA PARTIDA";
+        goalMsg = I18n.t("msg_win");
 
         audio.stopFondo();
         audio.playVictory(); // win.mp3
@@ -1418,7 +1451,7 @@ public class GameScreen extends BaseScreen {
     }
 
     // ==========================
-    // Nivel visual: activa nubes/estrellas
+    // Nivel visual
     // ==========================
     private void setNivelVisual(int nivel, boolean playSfx) {
         if (nivel == nivelVisual) return;
@@ -1452,14 +1485,14 @@ public class GameScreen extends BaseScreen {
         }
 
         if (playSfx && oldNivel >= 0 && (nivelVisual == 1 || nivelVisual == 2 || nivelVisual == 3)) {
-            levelUpMsgText = "SUPERASTE EL NIVEL\n\nCON EXITO";
+            levelUpMsgText = I18n.t("msg_levelup");
             levelUpMsgTime = LEVEL_UP_MSG_DURATION;
             audio.playLevelUp();
         }
     }
 
     // ==========================
-    // Enemigos por nivel (incluye ROJO en nivel 4)
+    // Enemigos por nivel
     // ==========================
     private EnemyType randomAllowedTypeForCurrentLevel() {
         if (nivelVisual == 0) return EnemyType.LILA;
@@ -1475,7 +1508,6 @@ public class GameScreen extends BaseScreen {
             return EnemyType.AZUL;
         }
 
-        // nivel 4
         int r = MathUtils.random(0, 3);
         if (r == 0) return EnemyType.LILA;
         if (r == 1) return EnemyType.VERDE;
@@ -1483,7 +1515,6 @@ public class GameScreen extends BaseScreen {
         return EnemyType.ROJO;
     }
 
-    // Reasignar SIEMPRE los nuevos para que el ROJO tenga probabilidad real
     private void clampNewEnemiesToLevel(int startIndex) {
         for (int i = startIndex; i < enemySystem.enemies.size; i++) {
             Enemy e = enemySystem.enemies.get(i);
@@ -1516,12 +1547,22 @@ public class GameScreen extends BaseScreen {
     }
 
     private void finishDying() {
+        // Guarda en historial (lista ordenada + recorte)
+        GameSave.addRunToHistory(score, coinSystem.collected, runTimeSec);
+
+        // (Opcional) mantener best/last si aún los usas en algún sitio
+        GameSave.saveRunResults(score, coinSystem.collected, runTimeSec);
+
         game.setScreen(new GameOverScreen(game, score, coinSystem.collected));
     }
 
     private void finishVictory() {
+        GameSave.addRunToHistory(score, coinSystem.collected, runTimeSec);
+        GameSave.saveRunResults(score, coinSystem.collected, runTimeSec);
+
         game.setScreen(new VictoryScreen(game, score, coinSystem.collected, audio));
     }
+
 
     @Override
     public void dispose() {

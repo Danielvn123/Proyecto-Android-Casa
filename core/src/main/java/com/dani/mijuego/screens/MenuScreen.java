@@ -17,6 +17,8 @@ import com.dani.mijuego.Main;
 import com.dani.mijuego.assets.Assets;
 import com.dani.mijuego.game.GameConfig;
 import com.dani.mijuego.util.UiHit;
+import com.dani.mijuego.game.I18n;
+
 
 public class MenuScreen extends BaseScreen {
 
@@ -103,11 +105,11 @@ public class MenuScreen extends BaseScreen {
         float h = viewport.getWorldHeight();
 
         float btnW = 750f;
-        float btnH = 300f;
-        float gap = 50F;
+        float btnH = 250f;
+        float gap = 150f;
 
         float cx = (w - btnW) / 2f;
-        float startY = h * 0.62f;
+        float startY = h * 0.75f;
 
         r1 = new Rectangle(cx, startY, btnW, btnH);
         r2 = new Rectangle(cx, startY - (btnH + gap), btnW, btnH);
@@ -139,11 +141,11 @@ public class MenuScreen extends BaseScreen {
 
     @Override
     public void render(float delta) {
-        ScreenUtils.clear(0f, 0f, 0f, 1f); // ✅ negro = bordes
+        ScreenUtils.clear(0f, 0f, 0f, 1f);
 
         if (batch == null || cam == null || viewport == null) return;
 
-        viewport.apply(true); // ✅ IMPORTANTISIMO con FitViewport
+        viewport.apply(true);
         cam.update();
         batch.setProjectionMatrix(cam.combined);
 
@@ -169,10 +171,10 @@ public class MenuScreen extends BaseScreen {
         drawButtonScaled(b3, r3, s3);
         drawButtonScaled(b4, r4, s4);
 
-        drawButtonText("JUGAR", r1, s1);
-        drawButtonText("RECORDS", r2, s2);
-        drawButtonText("OPCIONES", r3, s3);
-        drawButtonText("CREDITOS", r4, s4);
+        drawButtonText(I18n.t("menu_play"), r1, s1);
+        drawButtonText(I18n.t("menu_records"), r2, s2);
+        drawButtonText(I18n.t("menu_options"), r3, s3);
+        drawButtonText(I18n.t("menu_credits"), r4, s4);
 
         batch.end();
     }
@@ -208,7 +210,7 @@ public class MenuScreen extends BaseScreen {
         float uiLeft = cam.position.x - viewport.getWorldWidth() / 2f;
         float uiBottom = cam.position.y - viewport.getWorldHeight() / 2f;
 
-        float scale = 2.2f * btnScale;
+        float scale = 3.5f * btnScale;
         fillFont.getData().setScale(scale);
         outlineFont.getData().setScale(scale);
 

@@ -10,6 +10,8 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import com.dani.mijuego.Main;
 import com.dani.mijuego.assets.Assets;
 import com.dani.mijuego.game.GameAudio;
+import com.dani.mijuego.game.I18n;
+
 
 public class SplashScreen extends BaseScreen {
 
@@ -122,7 +124,7 @@ public class SplashScreen extends BaseScreen {
 
         animTime += delta;
 
-        String msg = "TOCA PARA\n EMPEZAR";
+        String msg = I18n.t("splash_tap");
 
         float alpha = 0.65f + 0.35f * MathUtils.sin(animTime * 4f);
         float scale = 2.6f + 0.10f * MathUtils.sin(animTime * 4f);

@@ -15,6 +15,8 @@ import com.dani.mijuego.assets.Assets;
 import com.dani.mijuego.game.GameAudio;
 import com.dani.mijuego.game.GameConfig;
 import com.dani.mijuego.util.UiHit;
+import com.dani.mijuego.game.I18n;
+
 
 public class PauseScreen extends BaseScreen {
 
@@ -72,12 +74,12 @@ public class PauseScreen extends BaseScreen {
         float w = viewport.getWorldWidth();
         float h = viewport.getWorldHeight();
 
-        float btnW = 750F;
-        float btnH = 300F;
-        float gap = 50f;
+        float btnW = 750f;
+        float btnH = 250f;
+        float gap = 150f;
 
         float cx = (w - btnW) / 2f;
-        float startY = h * 0.62f;
+        float startY = h * 0.75f;
 
         r1 = new Rectangle(cx, startY, btnW, btnH);
         r2 = new Rectangle(cx, startY - (btnH + gap), btnW, btnH);
@@ -113,21 +115,18 @@ public class PauseScreen extends BaseScreen {
         if (fondo != null) {
             batch.setColor(1f, 1f, 1f, 1f);
             batch.draw(fondo, left, bottom, w, h);
-
-            batch.setColor(0f, 0f, 0f, 0.45f);
-            batch.draw(fondo, left, bottom, w, h);
-            batch.setColor(1f, 1f, 1f, 1f);
         }
+
 
         drawButtonScaled(b1, r1, s1);
         drawButtonScaled(b2, r2, s2);
         drawButtonScaled(b3, r3, s3);
         drawButtonScaled(b4, r4, s4);
 
-        drawCenteredOutlined("CONTINUAR", r1, s1 * 2.2f);
-        drawCenteredOutlined("AJUSTES", r2, s2 * 2.2f);
-        drawCenteredOutlined("VOLVER A EMPEZAR", r3, s3 * 2.2f);
-        drawCenteredOutlined("SALIR", r4, s4 * 2.2f);
+        drawCenteredOutlined(I18n.t("pause_continue"), r1, s1 * 3.5f);
+        drawCenteredOutlined(I18n.t("pause_settings"), r2, s2 * 3.5f);
+        drawCenteredOutlined(I18n.t("pause_restart"), r3, s3 * 3.5f);
+        drawCenteredOutlined(I18n.t("pause_exit"), r4, s4 * 3.5f);
 
         batch.end();
     }

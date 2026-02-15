@@ -6,6 +6,7 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import com.dani.mijuego.Main;
 import com.dani.mijuego.assets.Assets;
 import com.dani.mijuego.game.GameConfig;
+import com.dani.mijuego.game.I18n;
 
 public class GameOverScreen extends BaseScreen {
 
@@ -68,24 +69,23 @@ public class GameOverScreen extends BaseScreen {
         font.getData().setScale(4.5f);
         font.setColor(1f, 1f, 1f, 1f);
 
-        String alturaTxt = "Altura X " + score + " m";
+        String alturaTxt = I18n.t("go_height") + " " + score + " m";
         layout.setText(font, alturaTxt);
         font.draw(batch, layout, uiLeft + 340f, uiTop - 250f);
 
-        String monedasTxt = "Monedas X " + coins;
+        String monedasTxt = I18n.t("go_coins") + " " + coins;
         layout.setText(font, monedasTxt);
         font.draw(batch, layout, uiLeft + 340f, uiTop - 380f);
 
         // ============
-        // "REINICIAR"
+        // "REINICIAR" / "RESTART"
         // ============
-        String btnText = "REINICIAR";
+        String btnText = I18n.t("go_restart");
         layout.setText(font, btnText);
 
         float textX = uiLeft
             + btnReiniciar.x
             + (btnReiniciar.width - layout.width) / 2.5f;
-
 
         float textY = uiBottom
             + btnReiniciar.y
@@ -109,6 +109,7 @@ public class GameOverScreen extends BaseScreen {
 
     @Override
     protected void onBack() {
-
+        // si quieres: volver al menú también con back
+        // game.setScreen(new MenuScreen(game));
     }
 }
