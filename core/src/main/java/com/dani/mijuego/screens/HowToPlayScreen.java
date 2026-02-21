@@ -1,5 +1,6 @@
 package com.dani.mijuego.screens;
 
+import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.dani.mijuego.Main;
 import com.dani.mijuego.game.GameConfig;
@@ -7,8 +8,15 @@ import com.dani.mijuego.game.I18n;
 
 public class HowToPlayScreen extends BaseScreen {
 
+    private final Screen backScreen;
+
     public HowToPlayScreen(Main game) {
+        this(game, null);
+    }
+
+    public HowToPlayScreen(Main game, Screen backScreen) {
         super(game, GameConfig.VW, GameConfig.VH);
+        this.backScreen = backScreen;
     }
 
     @Override
@@ -38,54 +46,26 @@ public class HowToPlayScreen extends BaseScreen {
 
         drawMenuBackgroundIfEnabled(worldW, worldH);
 
-        drawTitle(I18n.t("how_title"));
-        drawBody(worldW, worldH);
+        float uiBottom = cam.position.y - worldH / 2f;
+
+        drawCenteredTitle(I18n.t("how_title"), uiBottom + worldH * 0.88f);
+
+        drawCenteredMultiline(
+            I18n.t("how_body"),
+            uiBottom + worldH * 0.72f,
+            75f,
+            UI_SCALE,
+            UI_OUTLINE_PX
+        );
 
         drawBottomBackHintIfEnabled(worldW, worldH);
 
         batch.end();
     }
 
-    private void drawTitle(String text) {
-        if (text == null) text = "";
-
-        setTitleStyle();
-        layout.setText(fillFont, text);
-
-        float x = cam.position.x - layout.width / 2f;
-        float y = cam.position.y + viewport.getWorldHeight() * 0.38f;
-
-        drawOutlined(text, x, y, TITLE_OUTLINE_PX);
-        resetFontScale();
-    }
-
-    private void drawBody(float worldW, float worldH) {
-
-        setUiStyle();
-
-        float startY = cam.position.y + worldH * 0.22f;
-        float lineSpacing = 75f;
-
-        String body = I18n.t("how_body");
-        String[] lines = (body == null ? new String[0] : body.split("\n"));
-
-        float y = startY;
-
-        for (String line : lines) {
-            if (line == null) line = "";
-
-            layout.setText(fillFont, line);
-            float x = cam.position.x - layout.width / 2f;
-
-            drawOutlined(line, x, y, UI_OUTLINE_PX);
-            y -= lineSpacing;
-        }
-
-        resetFontScale();
-    }
-
     @Override
     protected void onBack() {
-        game.setScreen(new MenuScreen(game));
+        if (backScreen != null) game.setScreen(backScreen);
+        else game.setScreen(new MenuScreen(game));
     }
 }

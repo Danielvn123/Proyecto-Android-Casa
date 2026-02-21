@@ -10,7 +10,6 @@ import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
-import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.dani.mijuego.Main;
 import com.dani.mijuego.assets.Assets;
@@ -28,7 +27,9 @@ import com.dani.mijuego.game.entities.Shield;
 import com.dani.mijuego.game.systems.CoinSystem;
 import com.dani.mijuego.game.systems.EnemySystem;
 import com.dani.mijuego.game.systems.JumpBootsSystem;
+import com.dani.mijuego.game.systems.MushroomSystem;
 import com.dani.mijuego.game.systems.PickupSpawner;
+import com.dani.mijuego.game.systems.PlatformChecks;
 import com.dani.mijuego.game.systems.ShieldSystem;
 import com.dani.mijuego.game.world.Platform;
 import com.dani.mijuego.game.world.PlatformSystem;
@@ -41,9 +42,10 @@ public class GameScreen extends BaseScreen {
     // MODOS
     // ==========================
     public enum GameMode { INFINITE, LEVELS }
+
     private final GameMode gameMode;
 
-    private static final int MODE_TARGET_METERS = 800; // final modo niveles + vuelta en infinito
+    private static final int MODE_TARGET_METERS = 800;
     private int lapIndex = 0;
 
     // ==========================
@@ -53,19 +55,17 @@ public class GameScreen extends BaseScreen {
     private BitmapFont startOutlineFont;
 
     // Caída más rápida que la subida
-    private static final float FALL_MULT = 2.0f;      // prueba 1.8..2.6
-    private static final float MAX_FALL_SPEED = 3200f; // cap (en unidades de tu juego)
-
+    private static final float FALL_MULT = 2.0f;
+    private static final float MAX_FALL_SPEED = 3200f;
 
     private Texture btnPauseTex;
     private Rectangle btnPause;
 
-    private static final float VOID_FALL_DURATION = 4.0f;     // ✅ 3 segundos cayendo al vacío
-    private static final float HARD_DEATH_DURATION = 0.35f;   // como lo tenías antes
+    private static final float VOID_FALL_DURATION = 3.0f;
+    private static final float HARD_DEATH_DURATION = 0.35f;
 
-    private boolean voidFalling = false;   // ✅ estamos en caída libre final
+    private boolean voidFalling = false;
     private boolean playedVoidFallSfx = false;
-
 
     // ==========================
     // Fondos base
@@ -76,13 +76,12 @@ public class GameScreen extends BaseScreen {
     private Texture fondoAmarillo;
     private Texture fondoActual;
 
-    // NUBES (nivel 1 y 2) - layer
+    // Layers
     private Texture fondoNubes;
     private boolean cloudsEnabled = false;
     private static final float CLOUDS_PARALLAX = 0.25f;
     private static final float CLOUDS_ALPHA = 0.90f;
 
-    // ESTRELLAS (nivel 3 y 4) - layer
     private Texture fondoEstrellas;
     private boolean starsEnabled = false;
     private static final float STARS_PARALLAX = 0.18f;
@@ -95,10 +94,10 @@ public class GameScreen extends BaseScreen {
     private Texture plataformaMedia;
     private Texture plataformaModerna;
 
-    private Texture plataformaRotaTex;       // nivel 1
-    private Texture plataformaMediaRotaTex;  // nivel 2
-    private Texture plataformaColores;       // nivel 4
-    private Texture plataformaColoresRotaTex;// nivel 4 rota
+    private Texture plataformaRotaTex;        // nivel 1
+    private Texture plataformaMediaRotaTex;   // nivel 2
+    private Texture plataformaColores;        // nivel 4
+    private Texture plataformaColoresRotaTex; // nivel 4 rota
 
     private Texture plataformaActual;
 
@@ -157,7 +156,7 @@ public class GameScreen extends BaseScreen {
     private Texture pIzqSetaTex;
     private Texture pDerSetaTex;
 
-    private final Array<Mushroom> mushrooms = new Array<>();
+    private final MushroomSystem mushroomSystem = new MushroomSystem();
     private static final float SETA_CHANCE = 0.04f;
     private static final float SETA_DURATION = 5.0f;
     private static final float SETA_DRAW_SCALE = 1.6f;
@@ -170,8 +169,8 @@ public class GameScreen extends BaseScreen {
     // ==========================
     private Texture banderaTex;
 
-    private boolean goalSpawned = false;   // ya existe el final
-    private boolean goalReached = false;   // tocó la bandera
+    private boolean goalSpawned = false;
+    private boolean goalReached = false;
 
     private Platform goalPlatform = null;
     private Rectangle goalFlagRect = null;
@@ -182,14 +181,14 @@ public class GameScreen extends BaseScreen {
     private float goalTimer = 0f;
     private static final float GOAL_DELAY_TO_SCREEN = 2.0f;
 
-    private static final float GOAL_TOP_MARGIN = 180f; // margen para dejar la plataforma arriba del todo
+    private static final float GOAL_TOP_MARGIN = 180f;
     private String goalMsg = null;
 
     // ==========================
     // HUD Power Icons
     // ==========================
     private static final float POWER_ICON_SIZE = 110f;
-    private static final float POWER_ICON_GAP  = 12f;
+    private static final float POWER_ICON_GAP = 12f;
 
     // ==========================
     // World / Systems
@@ -202,11 +201,10 @@ public class GameScreen extends BaseScreen {
     private final EnemySystem enemySystem = new EnemySystem();
     private final PickupSpawner pickupSpawner = new PickupSpawner();
 
-    private final GameAudio audio = new GameAudio();
-
+    private GameAudio audio;
     private boolean started = false;
-
     private boolean initialized = false;
+
     private float maxY = 0f;
     private int score = 0;
 
@@ -228,22 +226,68 @@ public class GameScreen extends BaseScreen {
     // ===== Muerte / transición =====
     private boolean dying = false;
     private float dyingTimer = 0f;
-    private static final float FAST_DYING_DURATION = 4.0f;
 
-    private float frozenCamY = 0f;
-
-    // ===== Cámara =====
     private float groundY = 0f;
     private static final float CAM_Y_OFFSET = 500f;
     private static final float CAM_FOLLOW_SPEED = 10f;
 
-    // ===== Regla de “definitivo” =====
     private static final float HARD_DEATH_EXTRA = 300f;
     private static final float FALL_CHECK_RANGE = 1400f;
+
+    // ==========================
+    // Listeners (evita new cada frame)
+    // ==========================
+    private final CoinSystem.OnCoinCollected onCoinCollected = new CoinSystem.OnCoinCollected() {
+        @Override public void onCoinCollected() { audio.playCoin(); }
+    };
+
+    private final JumpBootsSystem.OnBootsCollected onBootsCollected = new JumpBootsSystem.OnBootsCollected() {
+        @Override public void onBootsCollected() {
+            bootsJumpsLeft = 1;
+            audio.playCogerItem();
+        }
+    };
+
+    private final ShieldSystem.OnShieldCollected onShieldCollected = new ShieldSystem.OnShieldCollected() {
+        @Override public void onShieldCollected() {
+            // Si la seta está activa, el escudo no hace efecto (pero se recoge y suena)
+            if (!setaActive) shieldActive = true;
+            audio.playCogerItem();
+        }
+    };
+
+    private final MushroomSystem.OnMushroomCollected onMushroomCollected = new MushroomSystem.OnMushroomCollected() {
+        @Override public void onMushroomCollected() {
+            // Si hay escudo activo: se rompe y la seta no hace efecto
+            if (shieldActive) {
+                shieldActive = false;
+                audio.playEscudoRoto();
+                audio.playCogerItem();
+                return;
+            }
+            // Si no hay escudo: activa seta
+            setaActive = true;
+            setaTimer = SETA_DURATION;
+            audio.playCogerItem();
+        }
+    };
+
+    private final EnemySystem.OnEnemyHit onEnemyHit = new EnemySystem.OnEnemyHit() {
+        @Override public boolean onEnemyHit(EnemyType type) {
+            if (shieldActive) {
+                shieldActive = false;
+                audio.playEscudoRoto();
+                return true; // bloqueado
+            }
+            audio.playEnemy(type);
+            return false;
+        }
+    };
 
     public GameScreen(Main game, GameMode mode) {
         super(game, GameConfig.VW, GameConfig.VH);
         this.gameMode = (mode == null) ? GameMode.LEVELS : mode;
+        this.audio = game.audio; // 🔥 usar audio global
     }
 
     public GameScreen(Main game) {
@@ -252,9 +296,6 @@ public class GameScreen extends BaseScreen {
 
     @Override
     public void show() {
-
-        // ✅ Si ya estabas jugando y vuelves del PauseScreen:
-        // NO reinicies nada, solo re-instala input y recalcula UI.
         if (initialized) {
             updateUiPositions();
             installInput();
@@ -270,107 +311,63 @@ public class GameScreen extends BaseScreen {
         startFillFont.setColor(1f, 0.90f, 0.10f, 1f);
         startOutlineFont.setColor(0f, 0f, 0f, 1f);
 
-        // Fondos base
-        fondoRosa = getTex(Assets.FONDO_NARANJA);
-        fondoAzul = getTex(Assets.FONDO_AZUL);
-        fondoAzulOscuro = getTex(Assets.FONDO_LILA);
-        fondoAmarillo = getTex(Assets.FONDO_AMARILLO);
+        // Fondos
+        fondoRosa       = mustTex(Assets.FONDO_NARANJA);
+        fondoAzul       = mustTex(Assets.FONDO_AZUL);
+        fondoAzulOscuro = mustTex(Assets.FONDO_LILA);
+        fondoAmarillo   = mustTex(Assets.FONDO_AMARILLO);
 
         // Layers
-        fondoNubes = getTex(Assets.NUBES);
-        fondoEstrellas = getTex(Assets.ESTRELLAS);
+        fondoNubes     = mustTex(Assets.NUBES);
+        fondoEstrellas = mustTex(Assets.ESTRELLAS);
 
         // Plataformas
-        plataformaRuinas = getTex(Assets.PLAT_RUINAS);
-        plataformaMedia = getTex(Assets.PLAT_MEDIA);
-        plataformaModerna = getTex(Assets.PLAT_MODERNA);
+        plataformaRuinas = mustTex(Assets.PLAT_RUINAS);
+        plataformaMedia  = mustTex(Assets.PLAT_MEDIA);
+        plataformaModerna= mustTex(Assets.PLAT_MODERNA);
 
-        plataformaRotaTex = getTex(Assets.PLAT_ROTA);
-        plataformaMediaRotaTex = getTex(Assets.PLAT_MEDIAROTA);
+        plataformaRotaTex      = mustTex(Assets.PLAT_ROTA);
+        plataformaMediaRotaTex = mustTex(Assets.PLAT_MEDIAROTA);
 
-        plataformaColores = getTex(Assets.PLAT_COLORES);
-        plataformaColoresRotaTex = getTex(Assets.PLAT_COLORES_ROTA);
+        plataformaColores        = mustTex(Assets.PLAT_COLORES);
+        plataformaColoresRotaTex = mustTex(Assets.PLAT_COLORES_ROTA);
 
-        ruinasTex = getTex(Assets.RUINAS);
+        // Decor
+        ruinasTex = mustTex(Assets.RUINAS);
 
         // Player
-        pIdleTex = getTex(Assets.PLAYER_IDLE);
-        pIzqTex  = getTex(Assets.PLAYER_IZQ);
-        pDerTex  = getTex(Assets.PLAYER_DER);
+        pIdleTex = mustTex(Assets.PLAYER_IDLE);
+        pIzqTex  = mustTex(Assets.PLAYER_IZQ);
+        pDerTex  = mustTex(Assets.PLAYER_DER);
 
         // Moneda
-        monedaTex = getTex(Assets.MONEDA);
+        monedaTex = mustTex(Assets.MONEDA);
 
         // Enemigos
-        enemyAzulTex  = getTex(Assets.BICHOAZUL);
-        enemyLilaTex  = getTex(Assets.BICHOLILA);
-        enemyVerdeTex = getTex(Assets.BICHOVERDE);
-        enemyRojoTex  = getTex(Assets.BICHOROJO);
+        enemyAzulTex  = mustTex(Assets.BICHOAZUL);
+        enemyLilaTex  = mustTex(Assets.BICHOLILA);
+        enemyVerdeTex = mustTex(Assets.BICHOVERDE);
+        enemyRojoTex  = mustTex(Assets.BICHOROJO);
 
         // Pause
-        btnPauseTex = getTex(Assets.BTN_PAUSE);
+        btnPauseTex = mustTex(Assets.BTN_PAUSE);
 
         // Powerups
-        bootsTex  = getTex(Assets.ZAPATOS);
-        shieldTex = getTex(Assets.ESCUDO);
+        bootsTex  = mustTex(Assets.ZAPATOS);
+        shieldTex = mustTex(Assets.ESCUDO);
 
-        pIdleShieldTex = getTex(Assets.PLAYER_ESCUDO_IDLE);
-        pIzqShieldTex  = getTex(Assets.PLAYER_ESCUDO_IZQ);
-        pDerShieldTex  = getTex(Assets.PLAYER_ESCUDO_DER);
+        pIdleShieldTex = mustTex(Assets.PLAYER_ESCUDO_IDLE);
+        pIzqShieldTex  = mustTex(Assets.PLAYER_ESCUDO_IZQ);
+        pDerShieldTex  = mustTex(Assets.PLAYER_ESCUDO_DER);
 
-        // SETA
-        setaTex = getTex(Assets.SETA);
-        pIdleSetaTex = getTex("personaje/personajeseta.png");
-        pIzqSetaTex  = getTex("personaje/personajesetaizquierda.png");
-        pDerSetaTex  = getTex("personaje/personajesetaderecha.png");
+        // Seta
+        setaTex     = mustTex(Assets.SETA);
+        pIdleSetaTex= mustTex("personaje/personajeseta.png");
+        pIzqSetaTex = mustTex("personaje/personajesetaizquierda.png");
+        pDerSetaTex = mustTex("personaje/personajesetaderecha.png");
 
-        // BANDERA
-        banderaTex = getTex(Assets.BANDERA);
-
-        // Requires (si algo falta, te lo canta al arrancar)
-        require(fondoRosa, "FONDO_ROSA");
-        require(fondoAzul, "FONDO_AZUL");
-        require(fondoAzulOscuro, "FONDO_AZULOSCURO");
-        require(fondoAmarillo, "FONDO_AMARILLO");
-
-        require(fondoNubes, "NUBES");
-        require(fondoEstrellas, "ESTRELLAS");
-
-        require(plataformaRuinas, "PLAT_RUINAS");
-        require(plataformaMedia, "PLAT_MEDIA");
-        require(plataformaModerna, "PLAT_MODERNA");
-        require(plataformaRotaTex, "PLAT_ROTA");
-        require(plataformaMediaRotaTex, "PLAT_MEDIAROTA");
-
-        require(plataformaColores, "PLAT_COLORES");
-        require(plataformaColoresRotaTex, "PLAT_COLORES_ROTA");
-
-        require(pIdleTex, "PLAYER_IDLE");
-        require(pIzqTex, "PLAYER_IZQ");
-        require(pDerTex, "PLAYER_DER");
-
-        require(monedaTex, "MONEDA");
-        require(btnPauseTex, "BTN_PAUSE");
-        require(ruinasTex, "RUINAS");
-
-        require(bootsTex, "ZAPATOS");
-        require(shieldTex, "ESCUDO");
-
-        require(pIdleShieldTex, "PLAYER_ESCUDO_IDLE");
-        require(pIzqShieldTex, "PLAYER_ESCUDO_IZQ");
-        require(pDerShieldTex, "PLAYER_ESCUDO_DER");
-
-        require(enemyLilaTex, "BICHOLILA");
-        require(enemyVerdeTex, "BICHOVERDE");
-        require(enemyAzulTex, "BICHOAZUL");
-        require(enemyRojoTex, "BICHOROJO");
-
-        require(setaTex, "SETA");
-        require(pIdleSetaTex, "personajeseta");
-        require(pIzqSetaTex, "personajesetaizquierda");
-        require(pDerSetaTex, "personajesetaderecha");
-
-        require(banderaTex, "BANDERA");
+        // Bandera
+        banderaTex = mustTex(Assets.BANDERA);
 
         audio.load();
 
@@ -383,25 +380,68 @@ public class GameScreen extends BaseScreen {
         installInput();
     }
 
-    private Texture getTex(String path) {
-        try {
-            if (game.assets.manager.isLoaded(path, Texture.class)) {
-                return game.assets.manager.get(path, Texture.class);
-            }
-            return null;
-        } catch (Exception e) {
-            return null;
-        }
+    // ==========================
+    // Texturas helpers
+    // ==========================
+    private Texture mustTex(String id) {
+        Texture t = getTex(id);
+        if (t == null) throw new RuntimeException("TEXTURA NULL: " + id);
+        return t;
     }
 
-    private void require(Texture t, String name) {
-        if (t == null) throw new RuntimeException("TEXTURA NULL: " + name);
+    private void drawFullScreen(Texture tex, float worldW, float worldH) {
+        if (tex == null) return;
+        batch.draw(tex,
+            cam.position.x - worldW / 2f,
+            cam.position.y - worldH / 2f,
+            worldW,
+            worldH
+        );
     }
 
-    private void drawIfNotNull(Texture t, float x, float y, float w, float h) {
-        if (t != null) batch.draw(t, x, y, w, h);
+    private void drawTiledParallaxLayer(Texture tex, float parallax, float alpha, float worldW, float worldH) {
+        if (tex == null) return;
+
+        float uiLeft = cam.position.x - worldW / 2f;
+        float uiBottom = cam.position.y - worldH / 2f;
+
+        float scroll = cam.position.y * parallax;
+
+        float tileH = worldH;
+        float mod = scroll % tileH;
+        if (mod < 0) mod += tileH;
+
+        float y0 = uiBottom - mod - tileH;
+
+        float oldA = batch.getColor().a;
+        batch.setColor(1f, 1f, 1f, oldA * alpha);
+
+        batch.draw(tex, uiLeft, y0,             worldW, tileH);
+        batch.draw(tex, uiLeft, y0 + tileH,     worldW, tileH);
+        batch.draw(tex, uiLeft, y0 + 2 * tileH, worldW, tileH);
+
+        batch.setColor(1f, 1f, 1f, oldA);
     }
 
+    private void drawRect(Texture tex, Rectangle r) {
+        if (tex == null || r == null) return;
+        batch.draw(tex, r.x, r.y, r.width, r.height);
+    }
+
+    private void drawScaledCentered(Texture tex, Rectangle r, float scale) {
+        if (tex == null || r == null) return;
+
+        float drawW = r.width * scale;
+        float drawH = r.height * scale;
+        float drawX = r.x + (r.width - drawW) / 2f;
+        float drawY = r.y + (r.height - drawH) / 2f;
+
+        batch.draw(tex, drawX, drawY, drawW, drawH);
+    }
+
+    // ==========================
+    // Reset
+    // ==========================
     private void resetWorld() {
         started = false;
         score = 0;
@@ -409,16 +449,19 @@ public class GameScreen extends BaseScreen {
 
         dying = false;
         dyingTimer = 0f;
-        frozenCamY = 0f;
+
+        voidFalling = false;
+        playedVoidFallSfx = false;
 
         lapIndex = 0;
 
         bootsSystem.reset();
         shieldSystem.reset();
+        mushroomSystem.reset();
+
         bootsJumpsLeft = 0;
         shieldActive = false;
 
-        mushrooms.clear();
         setaActive = false;
         setaTimer = 0f;
 
@@ -432,7 +475,6 @@ public class GameScreen extends BaseScreen {
 
         platformSystem.platforms.clear();
 
-        // Final reset
         goalSpawned = false;
         goalReached = false;
         goalPlatform = null;
@@ -462,7 +504,6 @@ public class GameScreen extends BaseScreen {
         first.dir = 1;
         platformSystem.platforms.add(first);
 
-        // ✅ empieza tocando la plataforma
         player = new Player(
             (GameConfig.VW - GameConfig.PLAYER_W) / 2f,
             firstPlatformY + GameConfig.PLATFORM_H,
@@ -473,7 +514,6 @@ public class GameScreen extends BaseScreen {
 
         float y = firstPlatformY;
 
-        // Spawn inicial hacia arriba
         for (int i = 0; i < 10; i++) {
             y += GameConfig.STEP_Y;
             float x = MathUtils.random(0f, GameConfig.VW - GameConfig.PLATFORM_W);
@@ -481,7 +521,7 @@ public class GameScreen extends BaseScreen {
             Platform p = platformSystem.makePlatform(x, y, true);
             platformSystem.platforms.add(p);
 
-            int tries = 2 + extraSpawnAttemptsForNivel(); // 🔥 +1 intento extra siempre
+            int tries = 2 + extraSpawnAttemptsForNivel();
             for (int t = 0; t < tries; t++) {
                 int enemiesBefore = enemySystem.enemies.size;
                 pickupSpawner.trySpawn(p, coinSystem, enemySystem);
@@ -491,7 +531,11 @@ public class GameScreen extends BaseScreen {
 
             bootsSystem.trySpawnOnPlatformIfFree(p, coinSystem, enemySystem, BOOTS_CHANCE, false);
             shieldSystem.trySpawnOnPlatformIfFree(p, coinSystem, enemySystem, bootsSystem, SHIELD_CHANCE, false);
-            trySpawnMushroomOnPlatformIfFree(p, SETA_CHANCE);
+
+            mushroomSystem.trySpawnOnPlatformIfFree(
+                p, coinSystem, enemySystem, bootsSystem, shieldSystem,
+                SETA_CHANCE, false
+            );
         }
 
         platformSystem.nextY = y;
@@ -515,7 +559,6 @@ public class GameScreen extends BaseScreen {
                     game.setScreen(new PauseScreen(game, GameScreen.this, audio));
                     return true;
                 }
-
                 if (!started && (keycode == Input.Keys.SPACE || keycode == Input.Keys.ENTER)) {
                     startGameIfNeeded();
                     return true;
@@ -575,17 +618,11 @@ public class GameScreen extends BaseScreen {
         batch.begin();
 
         // 1) fondo base
-        drawIfNotNull(
-            fondoActual,
-            cam.position.x - worldW / 2f,
-            cam.position.y - worldH / 2f,
-            worldW,
-            worldH
-        );
+        drawFullScreen(fondoActual, worldW, worldH);
 
         // 2) layer nubes / estrellas
-        if (cloudsEnabled) drawCloudsLayer(worldW, worldH);
-        if (starsEnabled)  drawStarsLayer(worldW, worldH);
+        if (cloudsEnabled) drawTiledParallaxLayer(fondoNubes, CLOUDS_PARALLAX, CLOUDS_ALPHA, worldW, worldH);
+        if (starsEnabled)  drawTiledParallaxLayer(fondoEstrellas, STARS_PARALLAX, STARS_ALPHA, worldW, worldH);
 
         // 3) ruinas
         if (!ruins.disabled && ruinasTex != null) {
@@ -611,17 +648,16 @@ public class GameScreen extends BaseScreen {
             Platform p = platformSystem.platforms.get(i);
 
             if (!p.broken) {
-                drawIfNotNull(plataformaActual, p.rect.x, p.rect.y, p.rect.width, p.rect.height);
+                if (plataformaActual != null) batch.draw(plataformaActual, p.rect.x, p.rect.y, p.rect.width, p.rect.height);
                 continue;
             }
 
             // Nivel 3: NO dibujar rota, solo desaparece
             if (nivelVisual == 2) continue;
 
-            Texture brokenTex = plataformaRotaTex; // nivel 1
-            if (nivelVisual == 1) brokenTex = plataformaMediaRotaTex;   // nivel 2
-            if (nivelVisual == 3) brokenTex = plataformaColoresRotaTex; // nivel 4
-
+            Texture brokenTex = plataformaRotaTex;           // nivel 1
+            if (nivelVisual == 1) brokenTex = plataformaMediaRotaTex;    // nivel 2
+            if (nivelVisual == 3) brokenTex = plataformaColoresRotaTex;  // nivel 4
             if (brokenTex == null) continue;
 
             float t = MathUtils.clamp(p.brokenTime / GameConfig.BROKEN_FADE_TIME, 0f, 1f);
@@ -640,9 +676,7 @@ public class GameScreen extends BaseScreen {
         }
 
         // 5) bandera
-        if (banderaTex != null && goalFlagRect != null) {
-            batch.draw(banderaTex, goalFlagRect.x, goalFlagRect.y, goalFlagRect.width, goalFlagRect.height);
-        }
+        drawRect(banderaTex, goalFlagRect);
 
         // 6) monedas
         if (monedaTex != null) {
@@ -656,13 +690,7 @@ public class GameScreen extends BaseScreen {
         if (bootsTex != null) {
             for (int i = 0; i < bootsSystem.boots.size; i++) {
                 JumpBoots b = bootsSystem.boots.get(i);
-
-                float drawW = b.rect.width * BOOTS_DRAW_SCALE;
-                float drawH = b.rect.height * BOOTS_DRAW_SCALE;
-                float drawX = b.rect.x + (b.rect.width - drawW) / 2f;
-                float drawY = b.rect.y + (b.rect.height - drawH) / 2f;
-
-                batch.draw(bootsTex, drawX, drawY, drawW, drawH);
+                drawScaledCentered(bootsTex, b.rect, BOOTS_DRAW_SCALE);
             }
         }
 
@@ -670,27 +698,15 @@ public class GameScreen extends BaseScreen {
         if (shieldTex != null) {
             for (int i = 0; i < shieldSystem.shields.size; i++) {
                 Shield s = shieldSystem.shields.get(i);
-
-                float drawW = s.rect.width * SHIELD_DRAW_SCALE;
-                float drawH = s.rect.height * SHIELD_DRAW_SCALE;
-                float drawX = s.rect.x + (s.rect.width - drawW) / 2f;
-                float drawY = s.rect.y + (s.rect.height - drawH) / 2f;
-
-                batch.draw(shieldTex, drawX, drawY, drawW, drawH);
+                drawScaledCentered(shieldTex, s.rect, SHIELD_DRAW_SCALE);
             }
         }
 
         // 9) setas
         if (setaTex != null) {
-            for (int i = 0; i < mushrooms.size; i++) {
-                Mushroom m = mushrooms.get(i);
-
-                float drawW = m.rect.width * SETA_DRAW_SCALE;
-                float drawH = m.rect.height * SETA_DRAW_SCALE;
-                float drawX = m.rect.x + (m.rect.width - drawW) / 2f;
-                float drawY = m.rect.y + (m.rect.height - drawH) / 2f;
-
-                batch.draw(setaTex, drawX, drawY, drawW, drawH);
+            for (int i = 0; i < mushroomSystem.mushrooms.size; i++) {
+                Mushroom m = mushroomSystem.mushrooms.get(i);
+                drawScaledCentered(setaTex, m.rect, SETA_DRAW_SCALE);
             }
         }
 
@@ -726,7 +742,7 @@ public class GameScreen extends BaseScreen {
                 else toDraw = pIdleSetaTex;
             }
 
-            drawIfNotNull(toDraw, player.rect.x, player.rect.y, player.rect.width, player.rect.height);
+            if (toDraw != null) batch.draw(toDraw, player.rect.x, player.rect.y, player.rect.width, player.rect.height);
         }
 
         // 12) pause
@@ -749,64 +765,13 @@ public class GameScreen extends BaseScreen {
     }
 
     // ==========================
-    // Layers
-    // ==========================
-    private void drawCloudsLayer(float worldW, float worldH) {
-        if (fondoNubes == null) return;
-
-        float uiLeft = cam.position.x - worldW / 2f;
-        float uiBottom = cam.position.y - worldH / 2f;
-
-        float scroll = cam.position.y * CLOUDS_PARALLAX;
-
-        float tileH = worldH;
-        float mod = scroll % tileH;
-        if (mod < 0) mod += tileH;
-
-        float y0 = uiBottom - mod - tileH;
-
-        float oldA = batch.getColor().a;
-        batch.setColor(1f, 1f, 1f, oldA * CLOUDS_ALPHA);
-
-        batch.draw(fondoNubes, uiLeft, y0,             worldW, tileH);
-        batch.draw(fondoNubes, uiLeft, y0 + tileH,     worldW, tileH);
-        batch.draw(fondoNubes, uiLeft, y0 + 2 * tileH, worldW, tileH);
-
-        batch.setColor(1f, 1f, 1f, oldA);
-    }
-
-    private void drawStarsLayer(float worldW, float worldH) {
-        if (fondoEstrellas == null) return;
-
-        float uiLeft = cam.position.x - worldW / 2f;
-        float uiBottom = cam.position.y - worldH / 2f;
-
-        float scroll = cam.position.y * STARS_PARALLAX;
-
-        float tileH = worldH;
-        float mod = scroll % tileH;
-        if (mod < 0) mod += tileH;
-
-        float y0 = uiBottom - mod - tileH;
-
-        float oldA = batch.getColor().a;
-        batch.setColor(1f, 1f, 1f, oldA * STARS_ALPHA);
-
-        batch.draw(fondoEstrellas, uiLeft, y0,             worldW, tileH);
-        batch.draw(fondoEstrellas, uiLeft, y0 + tileH,     worldW, tileH);
-        batch.draw(fondoEstrellas, uiLeft, y0 + 2 * tileH, worldW, tileH);
-
-        batch.setColor(1f, 1f, 1f, oldA);
-    }
-
-    // ==========================
     // HUD
     // ==========================
     private void drawHud(float worldW, float worldH) {
         float uiLeft = cam.position.x - worldW / 2f;
         float uiBottom = cam.position.y - worldH / 2f;
 
-        // Moneda + contador + powerups
+        // Moneda + contador + iconos powers
         if (monedaTex != null && btnPause != null) {
             float coinSize = 100f;
 
@@ -850,12 +815,10 @@ public class GameScreen extends BaseScreen {
                     batch.draw(shieldTex, x, iconY, POWER_ICON_SIZE, POWER_ICON_SIZE);
                     x += POWER_ICON_SIZE + POWER_ICON_GAP;
                 }
-
                 if (showBoots && bootsTex != null) {
                     batch.draw(bootsTex, x, iconY, POWER_ICON_SIZE, POWER_ICON_SIZE);
                     x += POWER_ICON_SIZE + POWER_ICON_GAP;
                 }
-
                 if (showSeta && setaTex != null) {
                     batch.draw(setaTex, x, iconY, POWER_ICON_SIZE, POWER_ICON_SIZE);
                 }
@@ -866,7 +829,7 @@ public class GameScreen extends BaseScreen {
             font.getData().setScale(1f);
         }
 
-        // Score
+        // Altura
         float margin = 70f;
         float textX = uiLeft + margin;
         float textY = uiBottom + worldH - margin;
@@ -881,11 +844,13 @@ public class GameScreen extends BaseScreen {
 
         // Mensaje level up
         if (levelUpMsgTime > 0f && levelUpMsgText != null) {
+
             float t = levelUpMsgTime / LEVEL_UP_MSG_DURATION;
             float alpha = MathUtils.clamp(t, 0f, 1f);
 
+            // 🔥 Centro exacto de la pantalla
             float cx = cam.position.x;
-            float cy = cam.position.y + 250f;
+            float cy = cam.position.y;
 
             float scale = 2.2f;
 
@@ -896,6 +861,7 @@ public class GameScreen extends BaseScreen {
             startFillFont.setColor(1f, 1f, 1f, alpha);
 
             layout.setText(startFillFont, levelUpMsgText);
+
             float x = cx - layout.width / 2f;
             float y = cy + layout.height / 2f;
 
@@ -905,7 +871,7 @@ public class GameScreen extends BaseScreen {
             startFillFont.setColor(Color.WHITE);
         }
 
-        // Mensaje final (ganaste)
+        // Mensaje victoria
         if (goalReached && goalMsg != null) {
             float cx = cam.position.x;
             float cy = cam.position.y + 140f;
@@ -927,7 +893,7 @@ public class GameScreen extends BaseScreen {
             startFillFont.setColor(Color.WHITE);
         }
 
-        // Texto start
+        // Press start
         if (!started) {
             startAnimTime += Gdx.graphics.getDeltaTime();
 
@@ -959,54 +925,45 @@ public class GameScreen extends BaseScreen {
     // ==========================
     private void update(float dt) {
 
-        // ✅ IMPORTANTÍSIMO: si tocó la bandera, esperar 2s y pasar a VictoryScreen
         if (goalReached) {
             goalTimer -= dt;
-            if (goalTimer <= 0f) {
-                finishVictory();
-            }
+            if (goalTimer <= 0f) finishVictory();
             return;
         }
 
-        // Movimiento horizontal (wrap siempre) + seta (invertir)
+        // Movimiento horizontal (wrap) + seta (invertir)
         if (player != null) {
             float oldX = player.rect.x;
 
             player.updateHorizontal(dt);
 
-            // si la seta invierte controles, invierte el desplazamiento (pero NO si hay escudo)
             if (setaActive && !shieldActive) {
                 float dx = player.rect.x - oldX;
                 player.rect.x = oldX - dx;
             }
 
-            // ✅ WRAP SIEMPRE (con o sin poderes)
             float w = player.rect.width;
             float worldW = GameConfig.VW;
 
-            if (player.rect.x + w < 0f) {
-                player.rect.x = worldW;
-            } else if (player.rect.x > worldW) {
-                player.rect.x = -w;
-            }
+            if (player.rect.x + w < 0f) player.rect.x = worldW;
+            else if (player.rect.x > worldW) player.rect.x = -w;
         }
 
-        // DYING
+        // ==========================
+        // DYING (incluye void fall)
+        // ==========================
         if (dying) {
 
-            // Sonido de caída SOLO si es muerte por vacío
-            if (voidFalling && !playedVoidFallSfx) {
-                audio.playCaidaPersonaje(); // ✅ caidapersonaje.mp3
-                playedVoidFallSfx = true;
-            }
-
-            // física de caída
             if (player != null) {
-                player.velY -= GameConfig.GRAVITY * dt;
+                float g = GameConfig.GRAVITY;
+
+                // ✅ si es caída libre definitiva, cae más rápido visualmente
+                if (voidFalling) g *= 2.8f;
+
+                player.velY -= g * dt;
                 player.rect.y += player.velY * dt;
             }
 
-            // ✅ cámara sigue al player hacia abajo (sin minCamY)
             cam.position.x = GameConfig.VW / 2f;
             if (player != null) {
                 float targetY = player.rect.y + CAM_Y_OFFSET;
@@ -1016,64 +973,56 @@ public class GameScreen extends BaseScreen {
             cam.update();
 
             dyingTimer -= dt;
-            if (dyingTimer <= 0f) {
-                finishDying();
-            }
+            if (dyingTimer <= 0f) finishDying();
             return;
         }
 
-        if (started && !dying) {
-            runTimeSec += dt;
-        }
+        if (started) runTimeSec += dt;
 
-        // Mover plataformas
         platformSystem.updateMoving(dt);
 
-        // Seta sigue a su plataforma
-        updateMushroomsFollowPlatforms();
-
-        // Física vertical
+        // ==========================
+        // Física vertical + colisiones
+        // ==========================
         if (started && player != null) {
             float oldY = player.rect.y;
 
-            // Física vertical (caer más rápido que subir)
             if (player.velY < 0f) {
-                player.velY -= GameConfig.GRAVITY * FALL_MULT * dt;  // cayendo => más gravedad
-                // cap de caída para que no sea exagerado
+                player.velY -= GameConfig.GRAVITY * FALL_MULT * dt;
                 if (player.velY < -MAX_FALL_SPEED) player.velY = -MAX_FALL_SPEED;
             } else {
-                player.velY -= GameConfig.GRAVITY * dt;              // subiendo => normal
+                player.velY -= GameConfig.GRAVITY * dt;
             }
 
             player.rect.y += player.velY * dt;
 
             handlePlatformCollision(oldY);
 
+            // ✅ Detectar caída libre DEFINITIVA aquí (NO esperar a killY)
+            // Solo cuando ya va cayendo
+            boolean canTriggerVoidFall = (player.velY < 0f)
+                && !dying
+                && !goalReached
+                && !(gameMode == GameMode.LEVELS && goalSpawned); // en final no queremos
+
+            if (canTriggerVoidFall && !hasPlatformBelowPlayer(FALL_CHECK_RANGE)) {
+                beginDying(VOID_FALL_DURATION, true); // ✅ 3s SIEMPRE
+                return;
+            }
+
             if (player.rect.y > maxY) {
                 maxY = player.rect.y;
                 score = (int) (maxY / 100f);
 
-                // En modo niveles, cuando ya hay final, no subimos score más de 800
                 if (gameMode == GameMode.LEVELS && goalSpawned) {
                     if (score > MODE_TARGET_METERS) score = MODE_TARGET_METERS;
                 }
             }
 
-            // MODOS
             if (gameMode == GameMode.LEVELS) {
-
-                // al llegar a 800, spawnea final (una vez)
-                if (score >= MODE_TARGET_METERS && !goalSpawned) {
-                    spawnGoalPlatform();
-                }
-
-                // mientras no haya final, niveles normales
-                if (!goalSpawned) {
-                    applyLevelByMeters(score, true);
-                }
-
+                if (score >= MODE_TARGET_METERS && !goalSpawned) spawnGoalPlatform();
+                if (!goalSpawned) applyLevelByMeters(score, true);
             } else {
-                // INFINITE: bucle cada 800
                 int newLap = score / MODE_TARGET_METERS;
                 if (newLap != lapIndex) {
                     lapIndex = newLap;
@@ -1090,7 +1039,6 @@ public class GameScreen extends BaseScreen {
             }
         }
 
-        // Plataformas rotas timer
         platformSystem.updateBreakables(dt);
 
         if (levelUpMsgTime > 0f) {
@@ -1098,7 +1046,9 @@ public class GameScreen extends BaseScreen {
             if (levelUpMsgTime < 0f) levelUpMsgTime = 0f;
         }
 
-        // CÁMARA (si final: congelada)
+        // ==========================
+        // Cámara (si final: congelada)
+        // ==========================
         if (player != null) {
             cam.position.x = GameConfig.VW / 2f;
 
@@ -1124,103 +1074,38 @@ public class GameScreen extends BaseScreen {
         float bottomVisible = cam.position.y - worldH / 2f;
         ruins.update(dt, bottomVisible);
 
-        // NO spawnear más plataformas por arriba si ya hay final en modo niveles
         boolean canSpawnMore = !(gameMode == GameMode.LEVELS && goalSpawned);
 
         if (canSpawnMore) {
             float topVisible = cam.position.y + worldH / 2f + 300f;
-            while (platformSystem.nextY < topVisible) {
-                spawnPlatformAbove();
-            }
+            while (platformSystem.nextY < topVisible) spawnPlatformAbove();
         }
 
-        // killY
         float killY = bottomVisible - 200f;
 
-        // ✅ Detectar “caída libre definitiva” ANTES de que salga de pantalla
-        if (started && player != null && !dying) {
-
-            if (player.velY < 0f) {
-
-                boolean hasPlatformBelow = false;
-                float minY = player.rect.y - FALL_CHECK_RANGE;
-
-                for (int i = 0; i < platformSystem.platforms.size; i++) {
-                    Platform p = platformSystem.platforms.get(i);
-                    if (p == null || p.broken) continue;
-
-                    float platTop = p.rect.y + p.rect.height;
-
-                    if (platTop < player.rect.y && platTop > minY) {
-                        hasPlatformBelow = true;
-                        break;
-                    }
-                }
-
-                if (!hasPlatformBelow) {
-                    beginVoidFall();
-                    return;
-                }
+        // Timer SETA
+        if (setaActive) {
+            setaTimer -= dt;
+            if (setaTimer <= 0f) {
+                setaTimer = 0f;
+                setaActive = false;
             }
         }
 
-        // SETA
-        updateMushrooms(dt, killY);
+        // Systems
+        coinSystem.update(player, killY, onCoinCollected);
+        bootsSystem.update(player, killY, onBootsCollected);
+        shieldSystem.update(player, killY, onShieldCollected);
+        mushroomSystem.update(player, killY, onMushroomCollected);
+        enemySystem.update(player, killY, onEnemyHit);
 
-        // updates sistemas
-        coinSystem.update(player, killY, new CoinSystem.OnCoinCollected() {
-            @Override
-            public void onCoinCollected() {
-                audio.playCoin();
-            }
-        });
-
-        bootsSystem.update(player, killY, new JumpBootsSystem.OnBootsCollected() {
-            @Override
-            public void onBootsCollected() {
-                bootsJumpsLeft = 1;
-                audio.playCogerItem();
-            }
-        });
-
-        shieldSystem.update(player, killY, new ShieldSystem.OnShieldCollected() {
-            @Override
-            public void onShieldCollected() {
-
-                // ✅ Si la SETA está activa, el escudo NO hace efecto
-                if (!setaActive) {
-                    shieldActive = true;
-                }
-
-                // (igual que con la seta bloqueada por escudo: se recoge y suena, pero sin efecto)
-                audio.playCogerItem();
-            }
-        });
-
-
-        enemySystem.update(player, killY, new EnemySystem.OnEnemyHit() {
-            @Override
-            public boolean onEnemyHit(EnemyType type) {
-                if (shieldActive) {
-                    shieldActive = false;
-                    audio.playEscudoRoto();
-                    return true;
-                }
-                audio.playEnemy(type);
-                return false;
-            }
-        });
-
-        // Cull plataformas: conservar aprox 3 por debajo
+        // Cull plataformas
         float keepBelow = 3f * GameConfig.STEP_Y + 250f;
         float cullY = player.rect.y - keepBelow;
-
-        // no cullar por encima de lo visible
         cullY = Math.min(cullY, bottomVisible - 200f);
-
         platformSystem.cullBelow(cullY);
 
-        // limpiar setas si su plataforma ya no existe
+        // Cull setas
         cullMushroomsWithMissingPlatforms();
 
         // Tocar bandera
@@ -1231,56 +1116,49 @@ public class GameScreen extends BaseScreen {
             }
         }
 
-        // PERDER (solo definitivo)
-        // PERDER (solo definitivo)
+        // Hard death solo (por si cae MUY por debajo)
         if (started && player != null && !dying) {
-
-            // muerte “dura” (muy abajo) -> rápida, SIN sonido de caída
             if (player.rect.y < killY - HARD_DEATH_EXTRA) {
                 beginDying(HARD_DEATH_DURATION, false);
                 return;
             }
-
-            // si cae por debajo de killY, comprobamos si hay plataformas debajo
-            if (player.rect.y < killY) {
-
-                boolean hasPlatformBelow = false;
-                float minY = player.rect.y - FALL_CHECK_RANGE;
-
-                for (int i = 0; i < platformSystem.platforms.size; i++) {
-                    Platform p = platformSystem.platforms.get(i);
-                    if (p == null || p.broken) continue;
-
-                    float platTop = p.rect.y + p.rect.height;
-
-                    if (platTop < player.rect.y && platTop > minY) {
-                        hasPlatformBelow = true;
-                        break;
-                    }
-                }
-
-                // ✅ caída libre final -> 4s + sonido caida + cámara bajando
-                if (!hasPlatformBelow) {
-                    beginDying(VOID_FALL_DURATION, true);
-                    return;
-                }
-            }
         }
     }
 
-    private void beginDying(float duration, boolean playVoidFallSfx) {
+    private void beginDying(float duration, boolean isVoidFall) {
         if (dying) return;
 
         dying = true;
         dyingTimer = duration;
 
-        voidFalling = playVoidFallSfx;
+        voidFalling = isVoidFall;
         playedVoidFallSfx = false;
 
-        // si quieres parar música al morir:
         audio.stopFondo();
 
-        // NO pongas aquí frozenCamY si quieres cámara libre
+        // ✅ Si es caída libre definitiva: sonido INMEDIATO (no esperar a estar abajo)
+        if (voidFalling) {
+            audio.playCaidaPersonaje();
+            playedVoidFallSfx = true;
+        }
+    }
+
+    private boolean hasPlatformBelowPlayer(float range) {
+        if (player == null) return false;
+
+        float minY = player.rect.y - range;
+
+        for (int i = 0; i < platformSystem.platforms.size; i++) {
+            Platform p = platformSystem.platforms.get(i);
+            if (p == null || p.broken) continue;
+
+            float platTop = p.rect.y + p.rect.height;
+
+            if (platTop < player.rect.y && platTop > minY) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void applyLevelByMeters(int meters, boolean playSfx) {
@@ -1297,29 +1175,26 @@ public class GameScreen extends BaseScreen {
         Platform p = platformSystem.makePlatform(x, platformSystem.nextY, true);
         platformSystem.platforms.add(p);
 
-        // 1) primero intenta spawner general (monedas/enemigos)
-        int tries = 2 + extraSpawnAttemptsForNivel(); // 🔥 más bichos (y más cosas) por plataforma
+        int tries = 2 + extraSpawnAttemptsForNivel();
         for (int t = 0; t < tries; t++) {
             int enemiesBefore = enemySystem.enemies.size;
             pickupSpawner.trySpawn(p, coinSystem, enemySystem);
             clampNewEnemiesToLevel(enemiesBefore);
         }
 
-        // si ya apareció algo, NO ponemos nada más
         if (hasAnyThingOnPlatform(p)) return;
 
-        // 2) tenis
         bootsSystem.trySpawnOnPlatformIfFree(p, coinSystem, enemySystem, BOOTS_CHANCE, false);
         if (hasAnyThingOnPlatform(p)) return;
 
-        // 3) escudo
         shieldSystem.trySpawnOnPlatformIfFree(p, coinSystem, enemySystem, bootsSystem, SHIELD_CHANCE, false);
         if (hasAnyThingOnPlatform(p)) return;
 
-        // 4) seta
-        trySpawnMushroomOnPlatformIfFree(p, SETA_CHANCE);
+        mushroomSystem.trySpawnOnPlatformIfFree(
+            p, coinSystem, enemySystem, bootsSystem, shieldSystem,
+            SETA_CHANCE, false
+        );
     }
-
 
     // ==========================
     // FINAL MODO NIVELES
@@ -1329,14 +1204,11 @@ public class GameScreen extends BaseScreen {
 
         float worldH = viewport.getWorldHeight();
 
-        // centrada
         float goalX = (GameConfig.VW - GameConfig.PLATFORM_W) / 2f;
 
-        // colocarla arriba del todo respecto a la cámara actual
         float desiredPlatformTopOnScreen = (cam.position.y + worldH / 2f) - GOAL_TOP_MARGIN;
         float goalY = desiredPlatformTopOnScreen - GameConfig.PLATFORM_H;
 
-        // asegurar que es "final" 800m o más
         float minFinalY = MODE_TARGET_METERS * 100f + 120f;
         if (goalY < minFinalY) goalY = minFinalY;
 
@@ -1349,25 +1221,19 @@ public class GameScreen extends BaseScreen {
         platformSystem.platforms.add(p);
         goalPlatform = p;
 
-        // bandera encima
         float fw = 120f;
         float fh = 160f;
         float fx = goalX + (GameConfig.PLATFORM_W - fw) / 2f;
         float fy = goalY + GameConfig.PLATFORM_H + 10f;
         goalFlagRect = new Rectangle(fx, fy, fw, fh);
 
-        // cortar techo: no más nextY
         platformSystem.nextY = goalY;
 
-        // eliminar posibles plataformas por encima
         for (int i = platformSystem.platforms.size - 1; i >= 0; i--) {
             Platform other = platformSystem.platforms.get(i);
-            if (other != p && other.rect.y > goalY + 20f) {
-                platformSystem.platforms.removeIndex(i);
-            }
+            if (other != p && other.rect.y > goalY + 20f) platformSystem.platforms.removeIndex(i);
         }
 
-        // congelar cámara para que se quede con la plataforma final arriba
         goalCamFrozen = true;
 
         float desiredCamTop = (goalY + GameConfig.PLATFORM_H) + GOAL_TOP_MARGIN;
@@ -1388,62 +1254,14 @@ public class GameScreen extends BaseScreen {
         goalMsg = I18n.t("msg_win");
 
         audio.stopFondo();
-        audio.playVictory(); // win.mp3
-    }
-
-    // ==========================
-    // SETA
-    // ==========================
-    private void updateMushroomsFollowPlatforms() {
-        for (int i = 0; i < mushrooms.size; i++) {
-            mushrooms.get(i).followPlatform();
-        }
-    }
-
-    private void updateMushrooms(float dt, float killY) {
-        if (setaActive) {
-            setaTimer -= dt;
-            if (setaTimer <= 0f) {
-                setaTimer = 0f;
-                setaActive = false;
-            }
-        }
-
-        // limpiar por debajo
-        for (int i = mushrooms.size - 1; i >= 0; i--) {
-            Mushroom m = mushrooms.get(i);
-            if (m.rect.y < killY) mushrooms.removeIndex(i);
-        }
-
-        // recoger
-        if (player == null) return;
-        for (int i = mushrooms.size - 1; i >= 0; i--) {
-            Mushroom m = mushrooms.get(i);
-            if (player.rect.overlaps(m.rect)) {
-                mushrooms.removeIndex(i);
-
-                // ✅ Si hay escudo: se rompe el escudo, PERO la seta NO hace efecto
-                if (shieldActive) {
-                    shieldActive = false;
-                    audio.playEscudoRoto();  // opcional, pero queda bien
-                    audio.playCogerItem();   // sonido de recoger (si quieres, puedes quitarlo)
-                    break;
-                }
-
-                // ✅ Si NO hay escudo: seta normal
-                setaActive = true;
-                setaTimer = SETA_DURATION;
-                audio.playCogerItem();
-                break;
-            }
-        }
+        audio.playVictory();
     }
 
     private void cullMushroomsWithMissingPlatforms() {
-        for (int i = mushrooms.size - 1; i >= 0; i--) {
-            Mushroom m = mushrooms.get(i);
-            if (m.platform == null || !platformStillExists(m.platform)) {
-                mushrooms.removeIndex(i);
+        for (int i = mushroomSystem.mushrooms.size - 1; i >= 0; i--) {
+            Mushroom m = mushroomSystem.mushrooms.get(i);
+            if (m == null || m.platform == null || !platformStillExists(m.platform)) {
+                mushroomSystem.mushrooms.removeIndex(i);
             }
         }
     }
@@ -1455,119 +1273,17 @@ public class GameScreen extends BaseScreen {
         return false;
     }
 
-    private void trySpawnMushroomOnPlatformIfFree(Platform p, float chance) {
-        if (p == null) return;
-        if (MathUtils.random() > chance) return;
-
-        // limitar cantidad total
-        if (mushrooms.size >= 4) return;
-
-        // si ya hay moneda/tenis/escudo/seta en esa plataforma: no spawnear
-        if (hasAnyPickupOnPlatform(p)) return;
-
-        float w = 70f;
-        float h = 70f;
-
-        float x = p.rect.x + (p.rect.width - w) / 2f;
-        float y = p.rect.y + p.rect.height + 18f;
-
-        Rectangle r = new Rectangle(x, y, w, h);
-        if (!isPickupAreaFree(r)) return;
-
-        mushrooms.add(new Mushroom(p, x, y, w, h));
-    }
-
-    private boolean hasAnyPickupOnPlatform(Platform p) {
-        if (p == null) return false;
-
-        float px1 = p.rect.x;
-        float px2 = p.rect.x + p.rect.width;
-        float top = p.rect.y + p.rect.height;
-
-        float yMin = top - 5f;
-        float yMax = top + 180f;
-
-        for (int i = 0; i < coinSystem.coins.size; i++) {
-            Coin c = coinSystem.coins.get(i);
-            if (isRectOnPlatformArea(c.rect, px1, px2, yMin, yMax)) return true;
-        }
-
-        for (int i = 0; i < bootsSystem.boots.size; i++) {
-            JumpBoots b = bootsSystem.boots.get(i);
-            if (isRectOnPlatformArea(b.rect, px1, px2, yMin, yMax)) return true;
-        }
-
-        for (int i = 0; i < shieldSystem.shields.size; i++) {
-            Shield s = shieldSystem.shields.get(i);
-            if (isRectOnPlatformArea(s.rect, px1, px2, yMin, yMax)) return true;
-        }
-
-        for (int i = 0; i < mushrooms.size; i++) {
-            Mushroom m = mushrooms.get(i);
-            if (isRectOnPlatformArea(m.rect, px1, px2, yMin, yMax)) return true;
-        }
-
-        return false;
-    }
-
+    // ==========================
+    // Helpers plataforma: “hay algo encima”
+    // ==========================
     private boolean hasAnyThingOnPlatform(Platform p) {
         if (p == null) return false;
-
-        float px1 = p.rect.x;
-        float px2 = p.rect.x + p.rect.width;
-        float top = p.rect.y + p.rect.height;
-
-        float yMin = top - 10f;
-        float yMax = top + 220f;
-
-        // monedas
-        for (int i = 0; i < coinSystem.coins.size; i++) {
-            Coin c = coinSystem.coins.get(i);
-            if (isRectOnPlatformArea(c.rect, px1, px2, yMin, yMax)) return true;
-        }
-
-        // tenis
-        for (int i = 0; i < bootsSystem.boots.size; i++) {
-            JumpBoots b = bootsSystem.boots.get(i);
-            if (isRectOnPlatformArea(b.rect, px1, px2, yMin, yMax)) return true;
-        }
-
-        // escudos
-        for (int i = 0; i < shieldSystem.shields.size; i++) {
-            Shield s = shieldSystem.shields.get(i);
-            if (isRectOnPlatformArea(s.rect, px1, px2, yMin, yMax)) return true;
-        }
-
-        // setas
-        for (int i = 0; i < mushrooms.size; i++) {
-            Mushroom m = mushrooms.get(i);
-            if (isRectOnPlatformArea(m.rect, px1, px2, yMin, yMax)) return true;
-        }
-
-        // enemigos (IMPORTANTE: también cuenta como “item”)
-        for (int i = 0; i < enemySystem.enemies.size; i++) {
-            Enemy e = enemySystem.enemies.get(i);
-            if (isRectOnPlatformArea(e.rect, px1, px2, yMin, yMax)) return true;
-        }
-
+        if (PlatformChecks.hasCoinOnPlatform(p, coinSystem)) return true;
+        if (PlatformChecks.hasEnemyOnPlatform(p, enemySystem)) return true;
+        if (PlatformChecks.hasBootsOnPlatform(p, bootsSystem)) return true;
+        if (PlatformChecks.hasShieldOnPlatform(p, shieldSystem)) return true;
+        if (PlatformChecks.hasMushroomOnPlatform(p, mushroomSystem)) return true;
         return false;
-    }
-
-
-    private boolean isRectOnPlatformArea(Rectangle r, float px1, float px2, float yMin, float yMax) {
-        float cx = r.x + r.width * 0.5f;
-        float cy = r.y + r.height * 0.5f;
-        return (cx >= px1 && cx <= px2 && cy >= yMin && cy <= yMax);
-    }
-
-    private boolean isPickupAreaFree(Rectangle r) {
-        for (int i = 0; i < coinSystem.coins.size; i++) if (coinSystem.coins.get(i).rect.overlaps(r)) return false;
-        for (int i = 0; i < enemySystem.enemies.size; i++) if (enemySystem.enemies.get(i).rect.overlaps(r)) return false;
-        for (int i = 0; i < bootsSystem.boots.size; i++) if (bootsSystem.boots.get(i).rect.overlaps(r)) return false;
-        for (int i = 0; i < shieldSystem.shields.size; i++) if (shieldSystem.shields.get(i).rect.overlaps(r)) return false;
-        for (int i = 0; i < mushrooms.size; i++) if (mushrooms.get(i).rect.overlaps(r)) return false;
-        if (goalFlagRect != null && goalFlagRect.overlaps(r)) return false;
-        return true;
     }
 
     // ==========================
@@ -1575,20 +1291,17 @@ public class GameScreen extends BaseScreen {
     // ==========================
     private void handlePlatformCollision(float oldY) {
         if (player == null) return;
-        if (player.velY >= 0) return; // solo cuando cae
+        if (player.velY >= 0) return;
 
-        // pies "más estrechos" para evitar engancharse por los lados
         float feetW = player.rect.width * 0.35f;
         float feetX = player.rect.x + (player.rect.width - feetW) / 2f;
 
-        float oldFeetY = oldY;              // y anterior (abajo del player)
-        float newFeetY = player.rect.y;     // y nuevo (abajo del player)
+        float oldFeetY = oldY;
+        float newFeetY = player.rect.y;
 
-        // distancia caída en este frame
         float fallDist = oldFeetY - newFeetY;
         if (fallDist <= 0f) return;
 
-        // margen dinámico: si caes mucho en un frame, aumentamos tolerancia
         float eps = Math.max(25f, fallDist + 5f);
 
         Platform best = null;
@@ -1600,15 +1313,12 @@ public class GameScreen extends BaseScreen {
 
             float platTop = p.rect.y + p.rect.height;
 
-            // cruzó el top de la plataforma en este frame
             boolean crossedTop = oldFeetY >= platTop && newFeetY <= platTop;
             if (!crossedTop) continue;
 
-            // pies solapan en X
             boolean feetOverX = feetX < p.rect.x + p.rect.width && (feetX + feetW) > p.rect.x;
             if (!feetOverX) continue;
 
-            // la "más alta" gana (la que realmente tocarías primero)
             if (platTop > bestTop && (Math.abs(newFeetY - platTop) <= eps)) {
                 bestTop = platTop;
                 best = p;
@@ -1617,7 +1327,6 @@ public class GameScreen extends BaseScreen {
 
         if (best == null) return;
 
-        // aterriza
         player.rect.y = bestTop;
 
         float jump = GameConfig.JUMP_VEL;
@@ -1631,8 +1340,11 @@ public class GameScreen extends BaseScreen {
 
         player.velY = jump;
 
-        if (usedBoots) audio.playTenis();
-        else audio.playLand();
+        if (usedBoots) {
+            audio.playTenis();
+        } else {
+            audio.playJump();
+        }
 
         if (best.breakable) {
             best.broken = true;
@@ -1649,29 +1361,31 @@ public class GameScreen extends BaseScreen {
         int oldNivel = nivelVisual;
         nivelVisual = nivel;
 
-        if (nivelVisual == 0) {
-            fondoActual = fondoRosa;
-            plataformaActual = plataformaRuinas;
-            cloudsEnabled = true;
-            starsEnabled = false;
-
-        } else if (nivelVisual == 1) {
-            fondoActual = fondoAzul;
-            plataformaActual = plataformaMedia;
-            cloudsEnabled = true;
-            starsEnabled = false;
-
-        } else if (nivelVisual == 2) {
-            fondoActual = fondoAzulOscuro;
-            plataformaActual = plataformaModerna;
-            cloudsEnabled = false;
-            starsEnabled = true;
-
-        } else {
-            fondoActual = fondoAmarillo;
-            plataformaActual = plataformaColores;
-            cloudsEnabled = false;
-            starsEnabled = true;
+        switch (nivelVisual) {
+            case 0:
+                fondoActual = fondoRosa;
+                plataformaActual = plataformaRuinas;
+                cloudsEnabled = true;
+                starsEnabled = false;
+                break;
+            case 1:
+                fondoActual = fondoAzul;
+                plataformaActual = plataformaMedia;
+                cloudsEnabled = true;
+                starsEnabled = false;
+                break;
+            case 2:
+                fondoActual = fondoAzulOscuro;
+                plataformaActual = plataformaModerna;
+                cloudsEnabled = false;
+                starsEnabled = true;
+                break;
+            default:
+                fondoActual = fondoAmarillo;
+                plataformaActual = plataformaColores;
+                cloudsEnabled = false;
+                starsEnabled = true;
+                break;
         }
 
         if (playSfx && oldNivel >= 0 && (nivelVisual == 1 || nivelVisual == 2 || nivelVisual == 3)) {
@@ -1715,10 +1429,10 @@ public class GameScreen extends BaseScreen {
 
     private int extraSpawnAttemptsForNivel() {
         switch (nivelVisual) {
-            case 0: return 1; // antes 0
-            case 1: return 2; // antes 1
-            case 2: return 3; // antes 2
-            case 3: return 4; // antes 3
+            case 0: return 1;
+            case 1: return 2;
+            case 2: return 3;
+            case 3: return 4;
             default: return 1;
         }
     }
@@ -1737,28 +1451,19 @@ public class GameScreen extends BaseScreen {
     // ==========================
     // Muerte / Victoria
     // ==========================
-    private void beginVoidFall() {
-        if (dying) return;
-
-        dying = true;
-        voidFalling = true;
-        dyingTimer = VOID_FALL_DURATION;
-
-        // parar música de fondo si quieres
-        audio.stopFondo();
-
-        // ✅ sonido de caída al empezar la caída libre final
-        audio.playCaidaPersonaje();
-    }
-
     private void finishDying() {
-        // ✅ una sola vez (antes lo tenías duplicado)
+
         GameSave.addRunToHistory(score, coinSystem.collected, runTimeSec);
-        game.setScreen(new GameOverScreen(game, score, coinSystem.collected));
+
+        game.setScreen(new GameOverScreen(
+            game,
+            score,
+            coinSystem.collected,
+            audio   // 🔥 ahora pasamos el audio
+        ));
     }
 
     private void finishVictory() {
-        // ✅ una sola vez (antes lo tenías duplicado)
         GameSave.addRunToHistory(score, coinSystem.collected, runTimeSec);
         game.setScreen(new VictoryScreen(game, score, coinSystem.collected, audio));
     }

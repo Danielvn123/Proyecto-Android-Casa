@@ -1,6 +1,3 @@
-// =========================
-// RecordsScreen (con BaseScreen nuevo)
-// =========================
 package com.dani.mijuego.screens;
 
 import com.badlogic.gdx.utils.Array;
@@ -43,114 +40,52 @@ public class RecordsScreen extends BaseScreen {
 
         drawMenuBackgroundIfEnabled(worldW, worldH);
 
-        // Título
-        drawTitle(I18n.t("RÉCORDS"));
+        float uiBottom = cam.position.y - worldH / 2f;
 
-        // TOP 10
-        drawTop10();
+        // FIX: antes hacías I18n.t("RÉCORDS") (literal). Ahora usamos key real:
+        drawCenteredTitle(I18n.t("menu_records"), uiBottom + worldH * 0.88f);
 
-        // Hint inferior (BaseScreen ya aplica estilo)
+        drawTop10(uiBottom, worldH);
+
         drawBottomBackHintIfEnabled(worldW, worldH);
 
         batch.end();
     }
 
-    private void drawTitle(String text) {
-        if (text == null) text = "";
-
-        setTitleStyle();
-        layout.setText(fillFont, text);
-
-        float x = cam.position.x - layout.width / 2f;
-        float y = cam.position.y + viewport.getWorldHeight() * 0.38f;
-
-        drawOutlined(text, x, y, TITLE_OUTLINE_PX);
-        resetFontScale();
-    }
-
-    private void drawTop10() {
+    private void drawTop10(float uiBottom, float worldH) {
         boolean en = (I18n.getLang() == I18n.Lang.EN);
-        String topLabel = en ? "TOP 10 RUNS" : "TOP 10 PARTIDAS";
 
-        // Cabecera encima del top
+        String topLabel = en ? "TOP 10 RUNS" : "TOP 10 PARTIDAS";
         String header = en ? "HEIGHT | COINS | TIME" : "ALTURA | MONEDAS | TIEMPO";
 
         Array<GameSave.Run> runs = GameSave.getRunsHistorySorted();
-
-        float worldW = viewport.getWorldWidth();
-        float worldH = viewport.getWorldHeight();
-
-        float centerX = cam.position.x;
-        float centerY = cam.position.y;
-
-        // Tamaño más grande
-        float bigScale = 3.0f;
-        fillFont.getData().setScale(bigScale);
-        outlineFont.getData().setScale(bigScale);
-
         int show = (runs == null) ? 0 : Math.min(10, runs.size);
-        String[] lines;
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(topLabel).append("\n");
+        sb.append(header).append("\n");
 
         if (show == 0) {
-            lines = new String[] { en ? "No runs saved yet." : "Aun no hay partidas guardadas." };
+            sb.append(en ? "No runs saved yet." : "Aun no hay partidas guardadas.");
         } else {
-            lines = new String[show];
             for (int i = 0; i < show; i++) {
                 GameSave.Run r = runs.get(i);
-                lines[i] =
-                    (i + 1) + ")   " +
-                        r.heightMeters + "m   |   " +
-                        r.coins + "   |   " +
-                        formatTime(r.timeSec);
+                sb.append(i + 1).append(")   ")
+                    .append(r.heightMeters).append("m   |   ")
+                    .append(r.coins).append("   |   ")
+                    .append(formatTime(r.timeSec));
+                if (i < show - 1) sb.append("\n");
             }
         }
 
-        // Calculamos el ancho máximo del bloque (título + cabecera + filas)
-        float maxW = 0f;
-
-        layout.setText(fillFont, topLabel);
-        maxW = Math.max(maxW, layout.width);
-
-        layout.setText(fillFont, header);
-        maxW = Math.max(maxW, layout.width);
-
-        for (String line : lines) {
-            layout.setText(fillFont, line);
-            maxW = Math.max(maxW, layout.width);
-        }
-
-        // Este es el X del bloque centrado REAL
-        float leftX = centerX - maxW / 2f;
-
-        // Colocación vertical
-        float titleY = centerY + worldH * 0.25f;
-
-        // Título TOP centrado dentro del bloque
-        layout.setText(fillFont, topLabel);
-        float titleX = leftX + (maxW - layout.width) / 2f;
-        drawOutlined(topLabel, titleX, titleY, 4.0f);
-
-        // Cabecera debajo del TOP
-        float headerY = titleY - 90f;
-        layout.setText(fillFont, header);
-        float headerX = leftX + (maxW - layout.width) / 2f;
-        drawOutlined(header, headerX, headerY, 4.0f);
-
-        // Filas (empiezan debajo de la cabecera)
-        float rowSpacing = 80f;
-        float rowY = headerY - 110f;
-
-        for (int i = 0; i < lines.length; i++) {
-            String line = lines[i];
-            layout.setText(fillFont, line);
-
-            float x = leftX + (maxW - layout.width) / 2f;
-            float y = rowY - i * rowSpacing;
-
-            drawOutlined(line, x, y, 4.0f);
-        }
-
-        resetFontScale();
+        // Un solo draw multiline para todo el bloque
+        drawCenteredMultiline(
+            sb.toString(),
+            uiBottom + worldH * 0.72f,
+            80f,
+            3.0f,     // igual que tu "bigScale"
+            4.0f
+        );
     }
 
     private String formatTime(float sec) {

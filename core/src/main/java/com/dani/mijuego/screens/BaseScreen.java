@@ -27,7 +27,7 @@ public abstract class BaseScreen extends ScreenAdapter {
     protected OrthographicCamera cam;
     protected Viewport viewport;
 
-    protected BitmapFont font;
+    protected BitmapFont font;         // legacy (algunas pantallas lo usaban)
     protected BitmapFont fillFont;
     protected BitmapFont outlineFont;
     protected GlyphLayout layout;
@@ -43,12 +43,12 @@ public abstract class BaseScreen extends ScreenAdapter {
     protected static final float BACK_HINT_Y = 120f;      // altura del texto
 
     // ==========================
-    // Estilo global texto (Options/Records)
+    // Estilo global texto
     // ==========================
     protected static final float TITLE_SCALE = 3.0f;
     protected static final float TITLE_OUTLINE_PX = 3.5f;
 
-    protected static final float UI_SCALE = 2.4f;         // estilo “botón Options”
+    protected static final float UI_SCALE = 2.4f;
     protected static final float UI_OUTLINE_PX = 3.0f;
 
     protected static final float BACK_HINT_SCALE = 2.2f;
@@ -75,7 +75,6 @@ public abstract class BaseScreen extends ScreenAdapter {
         outlineFont = new BitmapFont();
         layout = new GlyphLayout();
 
-        // Estilo inicial (por si un screen dibuja algo sin pasar por drawOutlined)
         applyDefaultTextStyle();
     }
 
@@ -113,7 +112,19 @@ public abstract class BaseScreen extends ScreenAdapter {
     }
 
     // ==========================
-    // Estilo global: siempre blanco/negro + batch sin alpha raro
+    // Assets helper (Quita safeGetTex repetido)
+    // ==========================
+    protected Texture getTex(String assetPath) {
+        try {
+            return game.assets.manager.get(assetPath, Texture.class);
+        } catch (Exception e) {
+            Gdx.app.error("ASSETS", "No se pudo obtener textura: " + assetPath, e);
+            return null;
+        }
+    }
+
+    // ==========================
+    // Estilo global: blanco/negro
     // ==========================
     protected void applyDefaultTextStyle() {
         if (batch != null) batch.setColor(1f, 1f, 1f, 1f);
@@ -124,14 +135,58 @@ public abstract class BaseScreen extends ScreenAdapter {
     protected void resetFontScale() {
         if (fillFont != null) fillFont.getData().setScale(1f);
         if (outlineFont != null) outlineFont.getData().setScale(1f);
+        if (font != null) font.getData().setScale(1f);
     }
 
-    // ==========================
-    // Texto con borde (ahora SIEMPRE aplica el estilo)
-    // ==========================
     protected void drawOutlined(String text, float x, float y, float outlinePx) {
         applyDefaultTextStyle();
         FontUtils.drawOutlined(batch, outlineFont, fillFont, text, x, y, outlinePx);
+    }
+
+    // ==========================
+    // NUEVO: título centrado reutilizable
+    // ==========================
+    protected void drawCenteredTitle(String text, float yWorld) {
+        if (text == null) text = "";
+        applyDefaultTextStyle();
+
+        fillFont.getData().setScale(TITLE_SCALE);
+        outlineFont.getData().setScale(TITLE_SCALE);
+
+        layout.setText(fillFont, text);
+
+        float x = cam.position.x - layout.width / 2f;
+        drawOutlined(text, x, yWorld, TITLE_OUTLINE_PX);
+
+        resetFontScale();
+    }
+
+    // ==========================
+    // NUEVO: multiline centrado reutilizable
+    // ==========================
+    protected void drawCenteredMultiline(String text,
+                                         float startY,
+                                         float lineSpacing,
+                                         float scale,
+                                         float outlinePx) {
+        if (text == null) text = "";
+        applyDefaultTextStyle();
+
+        fillFont.getData().setScale(scale);
+        outlineFont.getData().setScale(scale);
+
+        String[] lines = text.split("\n");
+        float y = startY;
+
+        for (String line : lines) {
+            if (line == null) line = "";
+            layout.setText(fillFont, line);
+            float x = cam.position.x - layout.width / 2f;
+            drawOutlined(line, x, y, outlinePx);
+            y -= lineSpacing;
+        }
+
+        resetFontScale();
     }
 
     // ==========================
@@ -167,7 +222,7 @@ public abstract class BaseScreen extends ScreenAdapter {
     }
 
     // ==========================
-    // Hint abajo + tap para volver (ya queda con estilo fijo)
+    // Hint abajo + tap para volver
     // ==========================
     protected void drawBottomBackHintIfEnabled(float worldW, float worldH) {
         if (!useBottomBackHint()) return;
@@ -202,7 +257,7 @@ public abstract class BaseScreen extends ScreenAdapter {
     }
 
     // ==========================
-    // Helpers opcionales para que lo uses si quieres (sin repetir números)
+    // Helpers (compat)
     // ==========================
     protected void setTitleStyle() {
         applyDefaultTextStyle();

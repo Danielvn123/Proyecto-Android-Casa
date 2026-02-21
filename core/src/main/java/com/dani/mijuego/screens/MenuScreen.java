@@ -1,96 +1,49 @@
 package com.dani.mijuego.screens;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.g2d.GlyphLayout;
-import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.dani.mijuego.Main;
 import com.dani.mijuego.assets.Assets;
 import com.dani.mijuego.game.GameConfig;
 import com.dani.mijuego.game.I18n;
-import com.dani.mijuego.util.UiHit;
+import com.dani.mijuego.util.UiButton;
 
 public class MenuScreen extends BaseScreen {
 
-    private Texture fondo;
     private Texture b1, b2, b3, b4, b5;
 
-    private Rectangle r1, r2, r3, r4, r5;
-
-    private BitmapFont fillFont;
-    private BitmapFont outlineFont;
-    private GlyphLayout layout;
-
-    private static final float BASE_SCALE = 1.00f;
-    private static final float HOVER_SCALE = 1.07f;
-    private static final float SCALE_SPEED = 12f;
-
-    private float s1 = BASE_SCALE, s2 = BASE_SCALE, s3 = BASE_SCALE, s4 = BASE_SCALE, s5 = BASE_SCALE;
-    private Rectangle hovered = null;
-
-    private final Vector3 tmp = new Vector3();
-
-    private static final String CLICK_MUSIC_PATH = "audio/selectbutton.mp3";
-    private Music clickMusic;
-    private boolean soundOn = true;
+    private final UiButton btnPlay    = new UiButton(0, 0, 1, 1);
+    private final UiButton btnRecords = new UiButton(0, 0, 1, 1);
+    private final UiButton btnOptions = new UiButton(0, 0, 1, 1);
+    private final UiButton btnHowTo   = new UiButton(0, 0, 1, 1);
+    private final UiButton btnCredits = new UiButton(0, 0, 1, 1);
 
     public MenuScreen(Main game) {
         super(game, GameConfig.VW, GameConfig.VH);
     }
 
     @Override
+    protected boolean useMenuBackground() { return true; }
+
+    @Override
     public void show() {
         super.show();
 
-        if (!game.assets.manager.isLoaded(Assets.FONDO_MENU, Texture.class)) {
-            Gdx.app.error("MENU", "Assets del menú NO cargados. Volviendo a SplashScreen...");
-            game.setScreen(new SplashScreen(game));
-            return;
-        }
-
-        fondo = safeGetTex(Assets.FONDO_MENU);
-        b1 = safeGetTex(Assets.BOTONMENU1);
-        b2 = safeGetTex(Assets.BOTONMENU2);
-        b3 = safeGetTex(Assets.BOTONMENU3);
-        b4 = safeGetTex(Assets.BOTONMENU4);
-
-        // ✅ reutiliza una textura para el 5º botón (puedes cambiarla si quieres)
-        b5 = safeGetTex(Assets.BOTONMENU1);
-
-        fillFont = new BitmapFont();
-        outlineFont = new BitmapFont();
-        layout = new GlyphLayout();
-
-        if (Gdx.files.internal(CLICK_MUSIC_PATH).exists()) {
-            clickMusic = Gdx.audio.newMusic(Gdx.files.internal(CLICK_MUSIC_PATH));
-            clickMusic.setLooping(false);
-            clickMusic.setVolume(1f);
-        } else {
-            Gdx.app.error("AUDIO", "NO EXISTE: " + CLICK_MUSIC_PATH);
-        }
+        // Texturas (unifica: ya no hay safeGetTex duplicado)
+        b1 = getTex(Assets.BOTONMENU1);
+        b2 = getTex(Assets.BOTONMENU2);
+        b3 = getTex(Assets.BOTONMENU3);
+        b4 = getTex(Assets.BOTONMENU4);
+        b5 = getTex(Assets.BOTONMENU1); // reutilizamos como en tu proyecto
 
         layoutButtons();
         installDefaultInput();
     }
 
-    private void playClick() {
-        if (!soundOn || clickMusic == null) return;
-        clickMusic.stop();
-        clickMusic.play();
-    }
-
-    private Texture safeGetTex(String path) {
-        try {
-            return game.assets.manager.get(path, Texture.class);
-        } catch (Exception e) {
-            Gdx.app.error("MENU", "No se pudo obtener textura: " + path, e);
-            return null;
-        }
+    private void click() {
+        if (game != null && game.audio != null) game.audio.playSelectButton();
     }
 
     @Override
@@ -103,192 +56,107 @@ public class MenuScreen extends BaseScreen {
         float h = viewport.getWorldHeight();
 
         float btnW = 750f;
-        float btnH = 230f;  // un poco más pequeño para que entren 5
+        float btnH = 230f;
         float gap = 90f;
 
-        float cx = (w - btnW) / 2f;
-
-        // ✅ centrar verticalmente 5 botones
+        float x = (w - btnW) / 2f;
         float totalH = 5f * btnH + 4f * gap;
         float startY = (h + totalH) / 2f - btnH;
 
-        r1 = new Rectangle(cx, startY, btnW, btnH);
-        r2 = new Rectangle(cx, startY - (btnH + gap), btnW, btnH);
-        r3 = new Rectangle(cx, startY - 2f * (btnH + gap), btnW, btnH);
-        r4 = new Rectangle(cx, startY - 3f * (btnH + gap), btnW, btnH);
-        r5 = new Rectangle(cx, startY - 4f * (btnH + gap), btnW, btnH);
-    }
-
-    private void updateHoverFromScreen(int screenX, int screenY) {
-        if (viewport == null || cam == null) return;
-
-        tmp.set(screenX, screenY, 0);
-        viewport.unproject(tmp);
-
-        float worldW = viewport.getWorldWidth();
-        float worldH = viewport.getWorldHeight();
-
-        float visibleLeft = cam.position.x - worldW / 2f;
-        float visibleBottom = cam.position.y - worldH / 2f;
-
-        float hudX = tmp.x - visibleLeft;
-        float hudY = tmp.y - visibleBottom;
-
-        hovered = null;
-        if (r1 != null && r1.contains(hudX, hudY)) hovered = r1;
-        else if (r2 != null && r2.contains(hudX, hudY)) hovered = r2;
-        else if (r3 != null && r3.contains(hudX, hudY)) hovered = r3;
-        else if (r4 != null && r4.contains(hudX, hudY)) hovered = r4;
-        else if (r5 != null && r5.contains(hudX, hudY)) hovered = r5;
+        btnPlay.set(x, startY, btnW, btnH);
+        btnRecords.set(x, startY - 1f * (btnH + gap), btnW, btnH);
+        btnOptions.set(x, startY - 2f * (btnH + gap), btnW, btnH);
+        btnHowTo.set(x, startY - 3f * (btnH + gap), btnW, btnH);
+        btnCredits.set(x, startY - 4f * (btnH + gap), btnW, btnH);
     }
 
     @Override
     public void render(float delta) {
         ScreenUtils.clear(0f, 0f, 0f, 1f);
 
-        if (batch == null || cam == null || viewport == null) return;
-
         viewport.apply(true);
         cam.update();
         batch.setProjectionMatrix(cam.combined);
 
-        updateHoverFromScreen(Gdx.input.getX(), Gdx.input.getY());
+        float worldW = viewport.getWorldWidth();
+        float worldH = viewport.getWorldHeight();
 
-        float t = 1f - (float) Math.exp(-SCALE_SPEED * delta);
-        s1 = MathUtils.lerp(s1, (hovered == r1) ? HOVER_SCALE : BASE_SCALE, t);
-        s2 = MathUtils.lerp(s2, (hovered == r2) ? HOVER_SCALE : BASE_SCALE, t);
-        s3 = MathUtils.lerp(s3, (hovered == r3) ? HOVER_SCALE : BASE_SCALE, t);
-        s4 = MathUtils.lerp(s4, (hovered == r4) ? HOVER_SCALE : BASE_SCALE, t);
-        s5 = MathUtils.lerp(s5, (hovered == r5) ? HOVER_SCALE : BASE_SCALE, t);
+        float uiLeft = cam.position.x - worldW / 2f;
+        float uiBottom = cam.position.y - worldH / 2f;
 
-        float w = viewport.getWorldWidth();
-        float h = viewport.getWorldHeight();
-
-        float left = cam.position.x - w / 2f;
-        float bottom = cam.position.y - h / 2f;
+        Vector3 hud = unprojectToHud(Gdx.input.getX(), Gdx.input.getY());
+        btnPlay.update(hud.x, hud.y, delta);
+        btnRecords.update(hud.x, hud.y, delta);
+        btnOptions.update(hud.x, hud.y, delta);
+        btnHowTo.update(hud.x, hud.y, delta);
+        btnCredits.update(hud.x, hud.y, delta);
 
         batch.begin();
-        batch.setColor(1f, 1f, 1f, 1f);
 
-        if (fondo != null) {
-            batch.draw(fondo, left, bottom, w, h);
-        }
+        drawMenuBackgroundIfEnabled(worldW, worldH);
 
-        // ✅ YA NO DA FALLO: métodos están abajo en esta clase
-        drawButtonScaled(b1, r1, s1);
-        drawButtonScaled(b2, r2, s2);
-        drawButtonScaled(b3, r3, s3);
-        drawButtonScaled(b4, r4, s4);
-        drawButtonScaled(b5, r5, s5);
+        btnPlay.drawTexture(batch, b1, uiLeft, uiBottom);
+        btnRecords.drawTexture(batch, b2, uiLeft, uiBottom);
+        btnOptions.drawTexture(batch, b3, uiLeft, uiBottom);
+        btnHowTo.drawTexture(batch, b4, uiLeft, uiBottom);
+        btnCredits.drawTexture(batch, b5, uiLeft, uiBottom);
 
-        drawButtonText(I18n.t("menu_play"), r1, s1);
-        drawButtonText(I18n.t("menu_records"), r2, s2);
-        drawButtonText(I18n.t("menu_options"), r3, s3);
-        drawButtonText(I18n.t("menu_instructions"), r4, s4);
-        drawButtonText(I18n.t("menu_credits"), r5, s5);
+        btnPlay.drawCenteredOutlinedText(batch, outlineFont, fillFont, layout,
+            I18n.t("menu_play"), uiLeft, uiBottom, UI_SCALE, UI_OUTLINE_PX);
+
+        btnRecords.drawCenteredOutlinedText(batch, outlineFont, fillFont, layout,
+            I18n.t("menu_records"), uiLeft, uiBottom, UI_SCALE, UI_OUTLINE_PX);
+
+        btnOptions.drawCenteredOutlinedText(batch, outlineFont, fillFont, layout,
+            I18n.t("menu_options"), uiLeft, uiBottom, UI_SCALE, UI_OUTLINE_PX);
+
+        btnHowTo.drawCenteredOutlinedText(batch, outlineFont, fillFont, layout,
+            I18n.t("menu_instructions"), uiLeft, uiBottom, UI_SCALE, UI_OUTLINE_PX);
+
+        btnCredits.drawCenteredOutlinedText(batch, outlineFont, fillFont, layout,
+            I18n.t("menu_credits"), uiLeft, uiBottom, UI_SCALE, UI_OUTLINE_PX);
 
         batch.end();
     }
 
-    private void drawButtonScaled(Texture t, Rectangle r, float scale) {
-        if (t == null || r == null) return;
-
-        float uiLeft = cam.position.x - viewport.getWorldWidth() / 2f;
-        float uiBottom = cam.position.y - viewport.getWorldHeight() / 2f;
-
-        float x = uiLeft + r.x;
-        float y = uiBottom + r.y;
-
-        float ox = r.width / 2f;
-        float oy = r.height / 2f;
-
-        batch.draw(
-            t,
-            x, y,
-            ox, oy,
-            r.width, r.height,
-            scale, scale,
-            0f,
-            0, 0,
-            t.getWidth(), t.getHeight(),
-            false, false
-        );
-    }
-
-    private void drawButtonText(String text, Rectangle r, float btnScale) {
-        if (text == null || r == null || fillFont == null || outlineFont == null || layout == null) return;
-
-        float uiLeft = cam.position.x - viewport.getWorldWidth() / 2f;
-        float uiBottom = cam.position.y - viewport.getWorldHeight() / 2f;
-
-        float scale = 3.5f * btnScale;
-        fillFont.getData().setScale(scale);
-        outlineFont.getData().setScale(scale);
-
-        fillFont.setColor(1f, 1f, 1f, 1f);
-        outlineFont.setColor(0f, 0f, 0f, 1f);
-
-        layout.setText(fillFont, text);
-
-        float cx = uiLeft + r.x + (r.width - layout.width) / 2f;
-        float cy = uiBottom + r.y + (r.height + layout.height) / 2f;
-
-        float o = 2.5f;
-        outlineFont.draw(batch, text, cx - o, cy);
-        outlineFont.draw(batch, text, cx + o, cy);
-        outlineFont.draw(batch, text, cx, cy - o);
-        outlineFont.draw(batch, text, cx, cy + o);
-        outlineFont.draw(batch, text, cx - o, cy - o);
-        outlineFont.draw(batch, text, cx + o, cy - o);
-        outlineFont.draw(batch, text, cx - o, cy + o);
-        outlineFont.draw(batch, text, cx + o, cy + o);
-
-        fillFont.draw(batch, text, cx, cy);
-
-        fillFont.getData().setScale(1f);
-        outlineFont.getData().setScale(1f);
-    }
-
     @Override
     protected boolean onTouchDownHud(float xHud, float yHud) {
-        if (UiHit.hit(r1, xHud, yHud)) {
-            playClick();
+
+        if (btnPlay.hit(xHud, yHud)) {
+            click();
             game.setScreen(new ModeSelectScreen(game));
             return true;
         }
-        if (UiHit.hit(r2, xHud, yHud)) {
-            playClick();
+
+        if (btnRecords.hit(xHud, yHud)) {
+            click();
             game.setScreen(new RecordsScreen(game));
             return true;
         }
-        if (UiHit.hit(r3, xHud, yHud)) {
-            playClick();
-            game.setScreen(new OptionsScreen(game));
+
+        if (btnOptions.hit(xHud, yHud)) {
+            click();
+            game.setScreen(new OptionsScreen(game, this));
             return true;
         }
-        if (UiHit.hit(r4, xHud, yHud)) {
-            playClick();
-            game.setScreen(new HowToPlayScreen(game));
+
+        if (btnHowTo.hit(xHud, yHud)) {
+            click();
+            game.setScreen(new HowToPlayScreen(game, this));
             return true;
         }
-        if (UiHit.hit(r5, xHud, yHud)) {
-            playClick();
-            game.setScreen(new CreditsScreen(game));
+
+        if (btnCredits.hit(xHud, yHud)) {
+            click();
+            game.setScreen(new CreditsScreen(game, this));
             return true;
         }
+
         return false;
     }
 
     @Override
     protected void onBack() {
-        Gdx.app.exit();
-    }
-
-    @Override
-    public void dispose() {
-        super.dispose();
-        if (fillFont != null) fillFont.dispose();
-        if (outlineFont != null) outlineFont.dispose();
-        if (clickMusic != null) clickMusic.dispose();
+        // En menú principal no hacemos nada con back (para no salir sin querer).
     }
 }

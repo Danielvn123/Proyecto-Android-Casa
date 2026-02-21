@@ -6,22 +6,19 @@ import com.dani.mijuego.game.world.Platform;
 public class Mushroom {
 
     public final Rectangle rect;
-    public final Platform platform;
 
-    public final float offsetX;
-    public final float offsetY;
+    // Para seguir la plataforma
+    public Platform platform;
+    public float offsetX;
+    public float offsetY;
 
-    public Mushroom(Platform platform, float x, float y, float w, float h) {
-        this.platform = platform;
+    public Mushroom(float x, float y, float w, float h) {
         this.rect = new Rectangle(x, y, w, h);
-
-        this.offsetX = x - platform.rect.x;
-        this.offsetY = y - platform.rect.y;
     }
 
     public void followPlatform() {
         if (platform == null) return;
         rect.x = platform.rect.x + offsetX;
-        rect.y = platform.rect.y + offsetY;
+        rect.y = platform.rect.y + platform.rect.height + offsetY;
     }
 }

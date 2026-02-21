@@ -11,7 +11,7 @@ import com.dani.mijuego.Main;
 import com.dani.mijuego.assets.Assets;
 import com.dani.mijuego.game.GameAudio;
 import com.dani.mijuego.game.I18n;
-
+import com.dani.mijuego.util.FontUtils;
 
 public class SplashScreen extends BaseScreen {
 
@@ -84,20 +84,6 @@ public class SplashScreen extends BaseScreen {
         });
     }
 
-    private void drawOutlinedText(String text, float x, float y, float outlinePx) {
-        outlineFont.draw(batch, text, x - outlinePx, y);
-        outlineFont.draw(batch, text, x + outlinePx, y);
-        outlineFont.draw(batch, text, x, y - outlinePx);
-        outlineFont.draw(batch, text, x, y + outlinePx);
-
-        outlineFont.draw(batch, text, x - outlinePx, y - outlinePx);
-        outlineFont.draw(batch, text, x + outlinePx, y - outlinePx);
-        outlineFont.draw(batch, text, x - outlinePx, y + outlinePx);
-        outlineFont.draw(batch, text, x + outlinePx, y + outlinePx);
-
-        fillFont.draw(batch, text, x, y);
-    }
-
     @Override
     public void render(float delta) {
         ScreenUtils.clear(0f, 0f, 0f, 1f);
@@ -118,7 +104,6 @@ public class SplashScreen extends BaseScreen {
         batch.begin();
 
         if (fondo != null) {
-            // Igual que tu versión antigua: ocupa TODO el viewport (en Android Stretch => ocupa toda la pantalla)
             batch.draw(fondo, left, bottom, w, h);
         }
 
@@ -132,25 +117,20 @@ public class SplashScreen extends BaseScreen {
         outlineFont.getData().setScale(scale);
         fillFont.getData().setScale(scale);
 
-        fillFont.setColor(1f, 1f, 1f, 1f);
-        outlineFont.setColor(0f, 0f, 1f, 1f);
+        fillFont.setColor(1f, 1f, 1f, alpha);
+        outlineFont.setColor(0f, 0f, 1f, alpha);
 
         layout.setText(fillFont, msg);
 
         float x = left + (w - layout.width) / 2f;
         float y = bottom + 200f;
 
-        drawOutlinedText(msg, x, y, 3.5f);
+        FontUtils.drawOutlined(batch, outlineFont, fillFont, msg, x, y, 3.5f);
 
         outlineFont.setColor(Color.BLACK);
         fillFont.setColor(Color.WHITE);
 
         batch.end();
-    }
-
-    @Override
-    public void resize(int w, int h) {
-        super.resize(w, h);
     }
 
     @Override

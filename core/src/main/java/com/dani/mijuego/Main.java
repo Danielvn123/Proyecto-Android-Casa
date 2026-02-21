@@ -23,7 +23,8 @@ public class Main extends Game {
         audio = new GameAudio();
         audio.load();
 
-        // NO reproducimos música aquí
+        // ✅ aplicar lo que esté guardado en opciones
+        audio.setEnabled(GameSave.isMusicOn());
 
         setScreen(new SplashScreen(this));
     }
