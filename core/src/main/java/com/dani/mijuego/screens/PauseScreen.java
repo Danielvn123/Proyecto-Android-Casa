@@ -9,7 +9,6 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.ScreenUtils;
-import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.dani.mijuego.Main;
 import com.dani.mijuego.assets.Assets;
 import com.dani.mijuego.game.GameAudio;
@@ -17,11 +16,10 @@ import com.dani.mijuego.game.GameConfig;
 import com.dani.mijuego.util.UiHit;
 import com.dani.mijuego.game.I18n;
 
-
 public class PauseScreen extends BaseScreen {
 
-    private Texture fondo, b1, b2, b3, b4;
-    private Rectangle r1, r2, r3, r4;
+    private Texture fondo, b1, b3, b4;     // <- b2 fuera
+    private Rectangle r1, r3, r4;          // <- r2 fuera
 
     private BitmapFont fillFont;
     private BitmapFont outlineFont;
@@ -34,7 +32,7 @@ public class PauseScreen extends BaseScreen {
     private static final float HOVER_SCALE = 1.08f;
     private static final float SCALE_SPEED = 12f;
 
-    private float s1 = BASE_SCALE, s2 = BASE_SCALE, s3 = BASE_SCALE, s4 = BASE_SCALE;
+    private float s1 = BASE_SCALE, s3 = BASE_SCALE, s4 = BASE_SCALE; // <- s2 fuera
 
     private Rectangle hoveredBtn;
     private final Vector3 tmp = new Vector3();
@@ -51,7 +49,6 @@ public class PauseScreen extends BaseScreen {
 
         fondo = safeGetTex(Assets.FONDO_MENU);
         b1 = safeGetTex(Assets.BOTONMENU1);
-        b2 = safeGetTex(Assets.BOTONMENU2);
         b3 = safeGetTex(Assets.BOTONMENU3);
         b4 = safeGetTex(Assets.BOTONMENU4);
 
@@ -79,20 +76,20 @@ public class PauseScreen extends BaseScreen {
         float gap = 150f;
 
         float cx = (w - btnW) / 2f;
-        float startY = h * 0.75f;
 
-        r1 = new Rectangle(cx, startY, btnW, btnH);
-        r2 = new Rectangle(cx, startY - (btnH + gap), btnW, btnH);
-        r3 = new Rectangle(cx, startY - 2f * (btnH + gap), btnW, btnH);
-        r4 = new Rectangle(cx, startY - 3f * (btnH + gap), btnW, btnH);
+        // Para 3 botones, los centramos verticalmente:
+        float totalH = 3f * btnH + 2f * gap;
+        float startY = (h + totalH) / 2f - btnH; // y del primer botón
+
+        r1 = new Rectangle(cx, startY, btnW, btnH);                           // continuar
+        r3 = new Rectangle(cx, startY - (btnH + gap), btnW, btnH);            // reiniciar
+        r4 = new Rectangle(cx, startY - 2f * (btnH + gap), btnW, btnH);       // salir
     }
 
     @Override
     public void render(float delta) {
-        // ✅ negro fuera del “móvil”
         ScreenUtils.clear(0f, 0f, 0f, 1f);
 
-        // ✅ con FitViewport, usa apply(true)
         viewport.apply(true);
         cam.update();
         batch.setProjectionMatrix(cam.combined);
@@ -101,7 +98,6 @@ public class PauseScreen extends BaseScreen {
 
         float t = 1f - (float) Math.exp(-SCALE_SPEED * delta);
         s1 = MathUtils.lerp(s1, (hoveredBtn == r1) ? HOVER_SCALE : BASE_SCALE, t);
-        s2 = MathUtils.lerp(s2, (hoveredBtn == r2) ? HOVER_SCALE : BASE_SCALE, t);
         s3 = MathUtils.lerp(s3, (hoveredBtn == r3) ? HOVER_SCALE : BASE_SCALE, t);
         s4 = MathUtils.lerp(s4, (hoveredBtn == r4) ? HOVER_SCALE : BASE_SCALE, t);
 
@@ -117,16 +113,13 @@ public class PauseScreen extends BaseScreen {
             batch.draw(fondo, left, bottom, w, h);
         }
 
-
         drawButtonScaled(b1, r1, s1);
-        drawButtonScaled(b2, r2, s2);
         drawButtonScaled(b3, r3, s3);
         drawButtonScaled(b4, r4, s4);
 
         drawCenteredOutlined(I18n.t("pause_continue"), r1, s1 * 3.5f);
-        drawCenteredOutlined(I18n.t("pause_settings"), r2, s2 * 3.5f);
-        drawCenteredOutlined(I18n.t("pause_restart"), r3, s3 * 3.5f);
-        drawCenteredOutlined(I18n.t("pause_exit"), r4, s4 * 3.5f);
+        drawCenteredOutlined(I18n.t("pause_restart"),  r3, s3 * 3.5f);
+        drawCenteredOutlined(I18n.t("pause_exit"),     r4, s4 * 3.5f);
 
         batch.end();
     }
@@ -152,7 +145,6 @@ public class PauseScreen extends BaseScreen {
 
         hoveredBtn = null;
         if (r1 != null && r1.contains(hudX, hudY)) hoveredBtn = r1;
-        else if (r2 != null && r2.contains(hudX, hudY)) hoveredBtn = r2;
         else if (r3 != null && r3.contains(hudX, hudY)) hoveredBtn = r3;
         else if (r4 != null && r4.contains(hudX, hudY)) hoveredBtn = r4;
     }
@@ -214,11 +206,6 @@ public class PauseScreen extends BaseScreen {
         if (UiHit.hit(r1, xHud, yHud)) {
             if (audio != null) audio.playSelectButton();
             game.setScreen(gameScreen);
-            return true;
-        }
-        if (UiHit.hit(r2, xHud, yHud)) {
-            if (audio != null) audio.playSelectButton();
-            game.setScreen(new OptionsScreen(game));
             return true;
         }
         if (UiHit.hit(r3, xHud, yHud)) {

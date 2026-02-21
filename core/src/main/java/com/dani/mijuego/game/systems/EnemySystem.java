@@ -3,6 +3,7 @@ package com.dani.mijuego.game.systems;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
 import com.dani.mijuego.game.GameConfig;
+import com.dani.mijuego.game.GameHaptics; // ✅ NUEVO
 import com.dani.mijuego.game.entities.Enemy;
 import com.dani.mijuego.game.entities.EnemyType;
 import com.dani.mijuego.game.entities.Player;
@@ -34,6 +35,9 @@ public class EnemySystem {
 
             if (player != null && e.rect.overlaps(player.rect)) {
 
+                // ✅ VIBRACIÓN al tocar un bicho (respeta opción OFF)
+                GameHaptics.vibrate(30);
+
                 // 1) Preguntamos primero si está bloqueado (escudo)
                 boolean blocked = false;
                 if (callback != null) {
@@ -58,7 +62,14 @@ public class EnemySystem {
 
     public static float getDrawScale(EnemyType type) {
         if (type == null) return 1f;
-        return type == EnemyType.VERDE ? 1.35f : 1.0f;
+
+        switch (type) {
+            case LILA:  return 1.0f;
+            case VERDE: return 1.30f;
+            case AZUL:  return 1.10f;
+            case ROJO:  return 1.30f;
+            default:    return 1f;
+        }
     }
 
     public static EnemyType randomType() {

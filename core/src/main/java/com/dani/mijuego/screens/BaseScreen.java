@@ -42,14 +42,24 @@ public abstract class BaseScreen extends ScreenAdapter {
     protected static final float BACK_HINT_ZONE_H = 220f; // zona inferior tocable
     protected static final float BACK_HINT_Y = 120f;      // altura del texto
 
+    // ==========================
+    // Estilo global texto (Options/Records)
+    // ==========================
+    protected static final float TITLE_SCALE = 3.0f;
+    protected static final float TITLE_OUTLINE_PX = 3.5f;
+
+    protected static final float UI_SCALE = 2.4f;         // estilo “botón Options”
+    protected static final float UI_OUTLINE_PX = 3.0f;
+
+    protected static final float BACK_HINT_SCALE = 2.2f;
+    protected static final float BACK_HINT_OUTLINE_PX = 3.0f;
+
     protected BaseScreen(Main game, float vw, float vh) {
         this.game = game;
 
         batch = new SpriteBatch();
         cam = new OrthographicCamera();
 
-        // Desktop: FitViewport -> mantiene proporción (puede dejar bordes)
-        // Android: StretchViewport -> ocupa toda la pantalla (sin bordes, sin recorte, puede estirar)
         if (Gdx.app.getType() == Application.ApplicationType.Desktop) {
             viewport = new FitViewport(vw, vh, cam);
         } else {
@@ -64,6 +74,9 @@ public abstract class BaseScreen extends ScreenAdapter {
         fillFont = new BitmapFont();
         outlineFont = new BitmapFont();
         layout = new GlyphLayout();
+
+        // Estilo inicial (por si un screen dibuja algo sin pasar por drawOutlined)
+        applyDefaultTextStyle();
     }
 
     @Override
@@ -100,9 +113,24 @@ public abstract class BaseScreen extends ScreenAdapter {
     }
 
     // ==========================
-    // Texto con borde
+    // Estilo global: siempre blanco/negro + batch sin alpha raro
+    // ==========================
+    protected void applyDefaultTextStyle() {
+        if (batch != null) batch.setColor(1f, 1f, 1f, 1f);
+        if (fillFont != null) fillFont.setColor(1f, 1f, 1f, 1f);
+        if (outlineFont != null) outlineFont.setColor(0f, 0f, 0f, 1f);
+    }
+
+    protected void resetFontScale() {
+        if (fillFont != null) fillFont.getData().setScale(1f);
+        if (outlineFont != null) outlineFont.getData().setScale(1f);
+    }
+
+    // ==========================
+    // Texto con borde (ahora SIEMPRE aplica el estilo)
     // ==========================
     protected void drawOutlined(String text, float x, float y, float outlinePx) {
+        applyDefaultTextStyle();
         FontUtils.drawOutlined(batch, outlineFont, fillFont, text, x, y, outlinePx);
     }
 
@@ -139,7 +167,7 @@ public abstract class BaseScreen extends ScreenAdapter {
     }
 
     // ==========================
-    // Hint abajo + tap para volver
+    // Hint abajo + tap para volver (ya queda con estilo fijo)
     // ==========================
     protected void drawBottomBackHintIfEnabled(float worldW, float worldH) {
         if (!useBottomBackHint()) return;
@@ -149,19 +177,19 @@ public abstract class BaseScreen extends ScreenAdapter {
         float uiLeft = cam.position.x - worldW / 2f;
         float uiBottom = cam.position.y - worldH / 2f;
 
-        float scale = 2.2f;
-        fillFont.getData().setScale(scale);
-        outlineFont.getData().setScale(scale);
+        applyDefaultTextStyle();
+
+        fillFont.getData().setScale(BACK_HINT_SCALE);
+        outlineFont.getData().setScale(BACK_HINT_SCALE);
 
         layout.setText(fillFont, hint);
 
         float x = uiLeft + (worldW - layout.width) / 2f;
         float y = uiBottom + BACK_HINT_Y;
 
-        drawOutlined(hint, x, y, 3.0f);
+        drawOutlined(hint, x, y, BACK_HINT_OUTLINE_PX);
 
-        fillFont.getData().setScale(1f);
-        outlineFont.getData().setScale(1f);
+        resetFontScale();
     }
 
     protected boolean handleBottomBackTap(float xHud, float yHud) {
@@ -171,6 +199,21 @@ public abstract class BaseScreen extends ScreenAdapter {
             return true;
         }
         return false;
+    }
+
+    // ==========================
+    // Helpers opcionales para que lo uses si quieres (sin repetir números)
+    // ==========================
+    protected void setTitleStyle() {
+        applyDefaultTextStyle();
+        fillFont.getData().setScale(TITLE_SCALE);
+        outlineFont.getData().setScale(TITLE_SCALE);
+    }
+
+    protected void setUiStyle() {
+        applyDefaultTextStyle();
+        fillFont.getData().setScale(UI_SCALE);
+        outlineFont.getData().setScale(UI_SCALE);
     }
 
     // ==========================
@@ -192,7 +235,6 @@ public abstract class BaseScreen extends ScreenAdapter {
             public boolean touchDown(int screenX, int screenY, int pointer, int button) {
                 Vector3 hud = unprojectToHud(screenX, screenY);
 
-                // primero: zona inferior para volver
                 if (handleBottomBackTap(hud.x, hud.y)) return true;
 
                 return onTouchDownHud(hud.x, hud.y);

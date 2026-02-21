@@ -11,13 +11,15 @@ public final class Assets {
     //FONDOS
     public static final String FONDO_TRABAJO    = "fondos/fondotrabajo.png";
     public static final String RUINAS           = "fondos/ruinas.png";
-    public static final String FONDO_ROSA       = "fondos/fondorosa.png";
+    public static final String FONDO_NARANJA       = "fondos/fondonaranja.png";
     public static final String FONDO_AZUL       = "fondos/fondoazul.png";
-    public static final String FONDO_AZULOSCURO = "fondos/fondoazuloscuro.png";
+    public static final String FONDO_LILA = "fondos/fondolila.png";
     public static final String FONDO_AMARILLO = "fondos/fondoamarillo.png";
     public static final String FONDO_MENU       = "fondos/fondomenu.png";
     public static final String NUBES = "fondos/nubes.png";
     public static final String ESTRELLAS = "fondos/estrellas.png";
+    public static final String GAMEOVER   = "fondos/gameover.png";
+    public static final String VICTORY   = "fondos/victory.png";
 
 
     //PLATAFORMAS
@@ -54,10 +56,8 @@ public final class Assets {
     public static final String BOTONMENU3 = "botones/botonmenu3.png";
     public static final String BOTONMENU4 = "botones/botonmenu4.png";
     public static final String BTN_PAUSE  = "botones/pause.png";
-
-    //GAMEOVER
-    public static final String GAMEOVER   = "gameover.png";
-    public static final String VICTORY   = "victory.png";
+    public static final String BTN_ON  = "botones/botonon.png";
+    public static final String BTN_OFF  = "botones/botonoff.png";
 
     //OBJETOS
     public static final String MONEDA     = "objetos/moneda.png";
@@ -70,13 +70,15 @@ public final class Assets {
         //FONDOS
         loadTex(FONDO_TRABAJO);
         loadTex(RUINAS);
-        loadTex(FONDO_ROSA);
+        loadTex(FONDO_NARANJA);
         loadTex(FONDO_AZUL);
-        loadTex(FONDO_AZULOSCURO);
+        loadTex(FONDO_LILA);
         loadTex(FONDO_AMARILLO);
         loadTex(FONDO_MENU);
         loadTex(NUBES);
         loadTex(ESTRELLAS);
+        loadTex(GAMEOVER);
+        loadTex(VICTORY);
 
 
         //PLATAFORMAS
@@ -112,12 +114,8 @@ public final class Assets {
         loadTex(BOTONMENU3);
         loadTex(BOTONMENU4);
         loadTex(BTN_PAUSE);
-
-        //GAMEOVER
-        loadTex(GAMEOVER);
-        loadTex(VICTORY);
-
-
+        loadTex(BTN_ON);
+        loadTex(BTN_OFF);
 
         //OBJETOS
         loadTex(MONEDA);

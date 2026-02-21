@@ -37,26 +37,50 @@ public class CreditsScreen extends BaseScreen {
 
         drawMenuBackgroundIfEnabled(worldW, worldH);
 
-        fillFont.getData().setScale(2.2f);
-        outlineFont.getData().setScale(2.2f);
-
-        String t =
-            I18n.t("credits_title") + "\n\n" +
-                I18n.t("credits_body");
-
-        layout.setText(fillFont, t);
-
-        float x = cam.position.x - layout.width / 2f;
-        float y = cam.position.y + layout.height / 2f;
-
-        drawOutlined(t, x, y, 3.0f);
+        drawTitle(I18n.t("credits_title"));
+        drawCreditsBody(worldW, worldH);
 
         drawBottomBackHintIfEnabled(worldW, worldH);
 
-        fillFont.getData().setScale(1f);
-        outlineFont.getData().setScale(1f);
-
         batch.end();
+    }
+
+    private void drawTitle(String text) {
+        if (text == null) text = "";
+
+        setTitleStyle();
+        layout.setText(fillFont, text);
+
+        float x = cam.position.x - layout.width / 2f;
+        float y = cam.position.y + viewport.getWorldHeight() * 0.38f;
+
+        drawOutlined(text, x, y, TITLE_OUTLINE_PX);
+        resetFontScale();
+    }
+
+    private void drawCreditsBody(float worldW, float worldH) {
+
+        setUiStyle();
+
+        float startY = cam.position.y + worldH * 0.20f;
+        float lineSpacing = 90f;
+
+        String body = I18n.t("credits_body");
+        String[] lines = (body == null ? new String[0] : body.split("\n"));
+
+        float y = startY;
+
+        for (String line : lines) {
+            if (line == null) line = "";
+
+            layout.setText(fillFont, line);
+            float x = cam.position.x - layout.width / 2f;
+
+            drawOutlined(line, x, y, UI_OUTLINE_PX);
+            y -= lineSpacing;
+        }
+
+        resetFontScale();
     }
 
     @Override

@@ -16,9 +16,9 @@ public final class I18n {
 
         // ===== MENU =====
         ES.put("menu_play", "JUGAR");
-        ES.put("menu_records", "RECORDS");
+        ES.put("menu_records", "RÉCORDS");
         ES.put("menu_options", "OPCIONES");
-        ES.put("menu_credits", "CREDITOS");
+        ES.put("menu_credits", "CRÉDITOS");
 
         EN.put("menu_play", "PLAY");
         EN.put("menu_records", "RECORDS");
@@ -90,6 +90,81 @@ public final class I18n {
         EN.put("pause_settings", "SETTINGS");
         EN.put("pause_restart", "RESTART");
         EN.put("pause_exit", "EXIT");
+
+        // ===== MENU EXTRA =====
+        ES.put("menu_instructions", "INSTRUCCIONES");
+        EN.put("menu_instructions", "INSTRUCTIONS");
+
+// ===== CREDITS =====
+        ES.put("credits_title", "CRÉDITOS");
+        EN.put("credits_title", "CREDITS");
+
+// Texto multilínea (cada línea separada por \n)
+        ES.put("credits_body",
+            "Autor:\n" +
+                "Daniel Vilas Noya\n" +
+                "\n" +
+                "Aplicaciones utilizadas:\n" +
+                "LibGDX\n" +
+                "Android Studio\n" +
+                "Java\n" +
+                "ChatGPT\n" +
+                "Gemini"
+        );
+
+        EN.put("credits_body",
+            "Author:\n" +
+                "Daniel Vilas Noya\n" +
+                "\n" +
+                "Tools used:\n" +
+                "LibGDX\n" +
+                "Android Studio\n" +
+                "Java\n" +
+                "ChatGPT\n" +
+                "Gemini"
+        );
+
+// ===== HOW TO PLAY / INSTRUCCIONES =====
+        ES.put("how_title", "INSTRUCCIONES");
+        EN.put("how_title", "HOW TO PLAY");
+
+        ES.put("how_body",
+            "OBJETIVO\n" +
+                "SUBE LO MÁS ALTO POSIBLE\n" +
+                "\n" +
+                "CONTROLES\n" +
+                "- TOCA O PULSA PARA EMPEZAR\n" +
+                "- MUEVE IZQUIERDA / DERECHA\n" +
+                "- CAER SOBRE PLATAFORMAS TE HACE SALTAR\n" +
+                "\n" +
+                "POWER UPS\n" +
+                "- ZAPATOS: SALTO MÁS ALTO\n" +
+                "- ESCUDO: TE PROTEGE DE UN GOLPE\n" +
+                "- SETA: INVIERTE LOS CONTROLES (UNOS SEGUNDOS)\n" +
+                "\n" +
+                "CONSEJOS\n" +
+                "- EVITA A LOS ENEMIGOS\n" +
+                "- RECOGE MONEDAS PARA SUMAR"
+        );
+
+        EN.put("how_body",
+            "GOAL\n" +
+                "CLIMB AS HIGH AS YOU CAN\n" +
+                "\n" +
+                "CONTROLS\n" +
+                "- TAP OR PRESS TO START\n" +
+                "- MOVE LEFT / RIGHT\n" +
+                "- LANDING ON PLATFORMS MAKES YOU JUMP\n" +
+                "\n" +
+                "POWER UPS\n" +
+                "- SHOES: HIGHER JUMP\n" +
+                "- SHIELD: BLOCKS ONE HIT\n" +
+                "- MUSHROOM: INVERTS CONTROLS (A FEW SECONDS)\n" +
+                "\n" +
+                "TIPS\n" +
+                "- AVOID ENEMIES\n" +
+                "- COLLECT COINS TO SCORE"
+        );
 
         // ===== VICTORY =====
         ES.put("victory_title", "VICTORIA");

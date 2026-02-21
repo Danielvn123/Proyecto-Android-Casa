@@ -43,48 +43,104 @@ public final class GameSave {
     private static final String K_PLAT_BROKEN  = "platBroken_";
     private static final String K_PLAT_BROKENT = "platBrokenT_";
 
-    // ===== RECORDS =====
-    private static final String K_REC_BEST_HEIGHT = "rec_best_height";
-    private static final String K_REC_BEST_COINS  = "rec_best_coins";
-    private static final String K_REC_BEST_TIME   = "rec_best_time";
-
-    private static final String K_REC_LAST_HEIGHT = "rec_last_height";
-    private static final String K_REC_LAST_COINS  = "rec_last_coins";
-    private static final String K_REC_LAST_TIME   = "rec_last_time";
-
-    // ✅ Idioma (opción global)
+    // =========================
+    // IDIOMA
+    // =========================
     private static final String K_LANG = "lang"; // "ES" o "EN"
 
-    // ===== TOP 10 RUNS =====
+    // =========================
+    // OPCIONES
+    // =========================
+    private static final String K_MUSIC_ON  = "music_on";
+    private static final String K_VIBRA_ON  = "vibra_on";
+    private static final String K_CTRL_MODE = "ctrl_mode"; // 0=TOUCH, 1=TILT
+    private static final String K_CTRL_SENS = "ctrl_sens"; // 0.8..1.4
+
+    // =========================
+    // TOP 10
+    // =========================
     private static final String K_RUNS = "runs_history";
     private static final int MAX_RUNS = 10;
 
     public static final class Run {
-        public long timeMs;      // cuándo se jugó
-        public int heightMeters; // altura final
-        public int coins;        // monedas
-        public float timeSec;    // duración
+        public long timeMs;
+        public int heightMeters;
+        public int coins;
+        public float timeSec;
     }
 
+    // =========================
+    // CLEAR ALL
+    // =========================
     public static void clear() {
         Preferences prefs = Gdx.app.getPreferences(PREFS_NAME);
         prefs.clear();
         prefs.flush();
     }
 
-    // ✅ Guardar idioma (no forma parte del save de partida)
+    // =========================
+    // IDIOMA
+    // =========================
     public static void setLang(String lang) {
         Preferences prefs = Gdx.app.getPreferences(PREFS_NAME);
         prefs.putString(K_LANG, (lang == null) ? "ES" : lang);
         prefs.flush();
     }
 
-    // ✅ Leer idioma
     public static String getLang() {
         Preferences prefs = Gdx.app.getPreferences(PREFS_NAME);
         return prefs.getString(K_LANG, "ES");
     }
 
+    // =========================
+    // OPCIONES
+    // =========================
+    public static void setMusicOn(boolean on) {
+        Preferences prefs = Gdx.app.getPreferences(PREFS_NAME);
+        prefs.putBoolean(K_MUSIC_ON, on);
+        prefs.flush();
+    }
+
+    public static boolean isMusicOn() {
+        return Gdx.app.getPreferences(PREFS_NAME).getBoolean(K_MUSIC_ON, true);
+    }
+
+    public static void setVibrationOn(boolean on) {
+        Preferences prefs = Gdx.app.getPreferences(PREFS_NAME);
+        prefs.putBoolean(K_VIBRA_ON, on);
+        prefs.flush();
+    }
+
+    public static boolean isVibrationOn() {
+        return Gdx.app.getPreferences(PREFS_NAME).getBoolean(K_VIBRA_ON, true);
+    }
+
+    public static void setControlModeTilt(boolean tilt) {
+        Preferences prefs = Gdx.app.getPreferences(PREFS_NAME);
+        prefs.putInteger(K_CTRL_MODE, tilt ? 1 : 0);
+        prefs.flush();
+    }
+
+    public static boolean isControlModeTilt() {
+        return Gdx.app.getPreferences(PREFS_NAME).getInteger(K_CTRL_MODE, 0) == 1;
+    }
+
+    public static void setControlSensitivity(float sens) {
+        if (sens < 0.8f) sens = 0.8f;
+        if (sens > 1.4f) sens = 1.4f;
+
+        Preferences prefs = Gdx.app.getPreferences(PREFS_NAME);
+        prefs.putFloat(K_CTRL_SENS, sens);
+        prefs.flush();
+    }
+
+    public static float getControlSensitivity() {
+        return Gdx.app.getPreferences(PREFS_NAME).getFloat(K_CTRL_SENS, 1.0f);
+    }
+
+    // =========================================================
+    // SAVE PARTIDA (completo, compatible con tu saveGame())
+    // =========================================================
     public static void save(State s) {
         Preferences prefs = Gdx.app.getPreferences(PREFS_NAME);
 
@@ -93,37 +149,44 @@ public final class GameSave {
         prefs.putBoolean(K_STARTED, s.started);
         prefs.putInteger(K_SCORE, s.score);
         prefs.putFloat(K_MAXY, s.maxY);
-        prefs.putFloat(K_VELY, s.player.velY);
+        prefs.putFloat(K_VELY, s.player != null ? s.player.velY : 0f);
         prefs.putInteger(K_NIVEL, s.nivelVisual);
 
-        prefs.putFloat(K_PLAYERX, s.player.rect.x);
-        prefs.putFloat(K_PLAYERY, s.player.rect.y);
+        if (s.player != null) {
+            prefs.putFloat(K_PLAYERX, s.player.rect.x);
+            prefs.putFloat(K_PLAYERY, s.player.rect.y);
+        }
 
         prefs.putFloat(K_CAMX, s.camX);
         prefs.putFloat(K_CAMY, s.camY);
 
-        prefs.putFloat(K_NEXTY, s.platforms.nextY);
+        if (s.platforms != null) {
+            prefs.putFloat(K_NEXTY, s.platforms.nextY);
+
+            prefs.putInteger(K_PLAT_COUNT, s.platforms.platforms.size);
+            for (int i = 0; i < s.platforms.platforms.size; i++) {
+                Platform p = s.platforms.platforms.get(i);
+
+                prefs.putFloat(K_PLAT_X + i, p.rect.x);
+                prefs.putFloat(K_PLAT_Y + i, p.rect.y);
+
+                prefs.putBoolean(K_PLAT_MOV + i, p.moving);
+                prefs.putFloat(K_PLAT_SPD + i, p.speed);
+                prefs.putInteger(K_PLAT_DIR + i, p.dir);
+
+                prefs.putBoolean(K_PLAT_BREAK + i, p.breakable);
+                prefs.putBoolean(K_PLAT_BROKEN + i, p.broken);
+                prefs.putFloat(K_PLAT_BROKENT + i, p.brokenTime);
+            }
+        } else {
+            prefs.putInteger(K_PLAT_COUNT, 0);
+            prefs.putFloat(K_NEXTY, 0f);
+        }
 
         prefs.putFloat(K_RUINAS_BASEY, s.ruinasBaseY);
         prefs.putFloat(K_RUINAS_ALPHA, s.ruinasAlpha);
         prefs.putBoolean(K_RUINAS_FADING, s.ruinasFading);
         prefs.putBoolean(K_RUINAS_OFF, s.ruinasOff);
-
-        prefs.putInteger(K_PLAT_COUNT, s.platforms.platforms.size);
-        for (int i = 0; i < s.platforms.platforms.size; i++) {
-            Platform p = s.platforms.platforms.get(i);
-
-            prefs.putFloat(K_PLAT_X + i, p.rect.x);
-            prefs.putFloat(K_PLAT_Y + i, p.rect.y);
-
-            prefs.putBoolean(K_PLAT_MOV + i, p.moving);
-            prefs.putFloat(K_PLAT_SPD + i, p.speed);
-            prefs.putInteger(K_PLAT_DIR + i, p.dir);
-
-            prefs.putBoolean(K_PLAT_BREAK + i, p.breakable);
-            prefs.putBoolean(K_PLAT_BROKEN + i, p.broken);
-            prefs.putFloat(K_PLAT_BROKENT + i, p.brokenTime);
-        }
 
         prefs.flush();
     }
@@ -194,15 +257,45 @@ public final class GameSave {
         public boolean ruinasOff;
     }
 
+    public static final class Loaded {
+        public boolean started;
+        public int score;
+        public float maxY;
+        public float velY;
+        public int nivelVisual;
+
+        public float playerX;
+        public float playerY;
+
+        public float camX;
+        public float camY;
+
+        public float nextY;
+
+        public float ruinasBaseY;
+        public float ruinasAlpha;
+        public boolean ruinasFading;
+        public boolean ruinasOff;
+
+        public int platformCount;
+        public float[] platX;
+        public float[] platY;
+        public boolean[] platMov;
+        public float[] platSpd;
+        public int[] platDir;
+        public boolean[] platBreak;
+        public boolean[] platBroken;
+        public float[] platBrokenT;
+    }
+
     // =========================================================
-    // TOP 10: guarda solo si entra en el top
+    // TOP 10: añade, ordena y recorta a 10
     // Orden: altura desc, monedas desc, tiempo desc
     // =========================================================
     public static void addRunToHistory(int heightMeters, int coins, float timeSeconds) {
         Preferences prefs = Gdx.app.getPreferences(PREFS_NAME);
 
-        String raw = prefs.getString(K_RUNS, "");
-        Array<Run> runs = parseRuns(raw);
+        Array<Run> runs = parseRuns(prefs.getString(K_RUNS, ""));
 
         Run r = new Run();
         r.timeMs = System.currentTimeMillis();
@@ -210,35 +303,28 @@ public final class GameSave {
         r.coins = coins;
         r.timeSec = timeSeconds;
 
+        runs.add(r);
         sortRuns(runs);
 
-        if (runs.size < MAX_RUNS) {
-            runs.add(r);
-            sortRuns(runs);
-            prefs.putString(K_RUNS, encodeRuns(runs));
-            prefs.flush();
-            return;
-        }
-
-        Run worst = runs.get(runs.size - 1);
-
-        // si la nueva es mejor que la peor, entra
-        if (compareRuns(r, worst) < 0) {
+        while (runs.size > MAX_RUNS) {
             runs.removeIndex(runs.size - 1);
-            runs.add(r);
-            sortRuns(runs);
-            prefs.putString(K_RUNS, encodeRuns(runs));
-            prefs.flush();
         }
-        // si no, no se guarda
+
+        prefs.putString(K_RUNS, encodeRuns(runs));
+        prefs.flush();
     }
 
     public static Array<Run> getRunsHistorySorted() {
         Preferences prefs = Gdx.app.getPreferences(PREFS_NAME);
-        String raw = prefs.getString(K_RUNS, "");
-        Array<Run> runs = parseRuns(raw);
+        Array<Run> runs = parseRuns(prefs.getString(K_RUNS, ""));
         sortRuns(runs);
         return runs;
+    }
+
+    public static void clearRunsHistory() {
+        Preferences prefs = Gdx.app.getPreferences(PREFS_NAME);
+        prefs.remove(K_RUNS);
+        prefs.flush();
     }
 
     private static void sortRuns(Array<Run> runs) {
@@ -287,82 +373,5 @@ public final class GameSave {
                 .append(r.timeSec);
         }
         return sb.toString();
-    }
-
-    // =========================================================
-    // BEST / LAST (lo de siempre)
-    // =========================================================
-    public static void saveRunResults(int heightMeters, int coins, float timeSeconds) {
-        Preferences prefs = Gdx.app.getPreferences(PREFS_NAME);
-
-        prefs.putInteger(K_REC_LAST_HEIGHT, heightMeters);
-        prefs.putInteger(K_REC_LAST_COINS, coins);
-        prefs.putFloat(K_REC_LAST_TIME, timeSeconds);
-
-        int bestH = prefs.getInteger(K_REC_BEST_HEIGHT, 0);
-        if (heightMeters > bestH) prefs.putInteger(K_REC_BEST_HEIGHT, heightMeters);
-
-        int bestC = prefs.getInteger(K_REC_BEST_COINS, 0);
-        if (coins > bestC) prefs.putInteger(K_REC_BEST_COINS, coins);
-
-        float bestT = prefs.getFloat(K_REC_BEST_TIME, 0f);
-        if (timeSeconds > bestT) prefs.putFloat(K_REC_BEST_TIME, timeSeconds);
-
-        prefs.flush();
-    }
-
-    public static int getBestHeight() {
-        return Gdx.app.getPreferences(PREFS_NAME).getInteger(K_REC_BEST_HEIGHT, 0);
-    }
-
-    public static int getBestCoins() {
-        return Gdx.app.getPreferences(PREFS_NAME).getInteger(K_REC_BEST_COINS, 0);
-    }
-
-    public static float getBestTime() {
-        return Gdx.app.getPreferences(PREFS_NAME).getFloat(K_REC_BEST_TIME, 0f);
-    }
-
-    public static int getLastHeight() {
-        return Gdx.app.getPreferences(PREFS_NAME).getInteger(K_REC_LAST_HEIGHT, 0);
-    }
-
-    public static int getLastCoins() {
-        return Gdx.app.getPreferences(PREFS_NAME).getInteger(K_REC_LAST_COINS, 0);
-    }
-
-    public static float getLastTime() {
-        return Gdx.app.getPreferences(PREFS_NAME).getFloat(K_REC_LAST_TIME, 0f);
-    }
-
-    public static final class Loaded {
-        public boolean started;
-        public int score;
-        public float maxY;
-        public float velY;
-        public int nivelVisual;
-
-        public float playerX;
-        public float playerY;
-
-        public float camX;
-        public float camY;
-
-        public float nextY;
-
-        public float ruinasBaseY;
-        public float ruinasAlpha;
-        public boolean ruinasFading;
-        public boolean ruinasOff;
-
-        public int platformCount;
-        public float[] platX;
-        public float[] platY;
-        public boolean[] platMov;
-        public float[] platSpd;
-        public int[] platDir;
-        public boolean[] platBreak;
-        public boolean[] platBroken;
-        public float[] platBrokenT;
     }
 }

@@ -1,8 +1,5 @@
 package com.dani.mijuego.screens;
 
-import static com.badlogic.gdx.utils.Align.bottom;
-import static com.badlogic.gdx.utils.Align.left;
-
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.Texture;
@@ -12,20 +9,18 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.ScreenUtils;
-import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.dani.mijuego.Main;
 import com.dani.mijuego.assets.Assets;
 import com.dani.mijuego.game.GameConfig;
-import com.dani.mijuego.util.UiHit;
 import com.dani.mijuego.game.I18n;
-
+import com.dani.mijuego.util.UiHit;
 
 public class MenuScreen extends BaseScreen {
 
     private Texture fondo;
-    private Texture b1, b2, b3, b4;
+    private Texture b1, b2, b3, b4, b5;
 
-    private Rectangle r1, r2, r3, r4;
+    private Rectangle r1, r2, r3, r4, r5;
 
     private BitmapFont fillFont;
     private BitmapFont outlineFont;
@@ -35,7 +30,7 @@ public class MenuScreen extends BaseScreen {
     private static final float HOVER_SCALE = 1.07f;
     private static final float SCALE_SPEED = 12f;
 
-    private float s1 = BASE_SCALE, s2 = BASE_SCALE, s3 = BASE_SCALE, s4 = BASE_SCALE;
+    private float s1 = BASE_SCALE, s2 = BASE_SCALE, s3 = BASE_SCALE, s4 = BASE_SCALE, s5 = BASE_SCALE;
     private Rectangle hovered = null;
 
     private final Vector3 tmp = new Vector3();
@@ -63,6 +58,9 @@ public class MenuScreen extends BaseScreen {
         b2 = safeGetTex(Assets.BOTONMENU2);
         b3 = safeGetTex(Assets.BOTONMENU3);
         b4 = safeGetTex(Assets.BOTONMENU4);
+
+        // ✅ reutiliza una textura para el 5º botón (puedes cambiarla si quieres)
+        b5 = safeGetTex(Assets.BOTONMENU1);
 
         fillFont = new BitmapFont();
         outlineFont = new BitmapFont();
@@ -105,16 +103,20 @@ public class MenuScreen extends BaseScreen {
         float h = viewport.getWorldHeight();
 
         float btnW = 750f;
-        float btnH = 250f;
-        float gap = 150f;
+        float btnH = 230f;  // un poco más pequeño para que entren 5
+        float gap = 90f;
 
         float cx = (w - btnW) / 2f;
-        float startY = h * 0.75f;
+
+        // ✅ centrar verticalmente 5 botones
+        float totalH = 5f * btnH + 4f * gap;
+        float startY = (h + totalH) / 2f - btnH;
 
         r1 = new Rectangle(cx, startY, btnW, btnH);
         r2 = new Rectangle(cx, startY - (btnH + gap), btnW, btnH);
         r3 = new Rectangle(cx, startY - 2f * (btnH + gap), btnW, btnH);
         r4 = new Rectangle(cx, startY - 3f * (btnH + gap), btnW, btnH);
+        r5 = new Rectangle(cx, startY - 4f * (btnH + gap), btnW, btnH);
     }
 
     private void updateHoverFromScreen(int screenX, int screenY) {
@@ -137,6 +139,7 @@ public class MenuScreen extends BaseScreen {
         else if (r2 != null && r2.contains(hudX, hudY)) hovered = r2;
         else if (r3 != null && r3.contains(hudX, hudY)) hovered = r3;
         else if (r4 != null && r4.contains(hudX, hudY)) hovered = r4;
+        else if (r5 != null && r5.contains(hudX, hudY)) hovered = r5;
     }
 
     @Override
@@ -156,25 +159,33 @@ public class MenuScreen extends BaseScreen {
         s2 = MathUtils.lerp(s2, (hovered == r2) ? HOVER_SCALE : BASE_SCALE, t);
         s3 = MathUtils.lerp(s3, (hovered == r3) ? HOVER_SCALE : BASE_SCALE, t);
         s4 = MathUtils.lerp(s4, (hovered == r4) ? HOVER_SCALE : BASE_SCALE, t);
+        s5 = MathUtils.lerp(s5, (hovered == r5) ? HOVER_SCALE : BASE_SCALE, t);
 
         float w = viewport.getWorldWidth();
         float h = viewport.getWorldHeight();
+
+        float left = cam.position.x - w / 2f;
+        float bottom = cam.position.y - h / 2f;
 
         batch.begin();
         batch.setColor(1f, 1f, 1f, 1f);
 
         if (fondo != null) {
-            batch.draw(fondo, left, bottom, w, h);        }
+            batch.draw(fondo, left, bottom, w, h);
+        }
 
+        // ✅ YA NO DA FALLO: métodos están abajo en esta clase
         drawButtonScaled(b1, r1, s1);
         drawButtonScaled(b2, r2, s2);
         drawButtonScaled(b3, r3, s3);
         drawButtonScaled(b4, r4, s4);
+        drawButtonScaled(b5, r5, s5);
 
         drawButtonText(I18n.t("menu_play"), r1, s1);
         drawButtonText(I18n.t("menu_records"), r2, s2);
         drawButtonText(I18n.t("menu_options"), r3, s3);
-        drawButtonText(I18n.t("menu_credits"), r4, s4);
+        drawButtonText(I18n.t("menu_instructions"), r4, s4);
+        drawButtonText(I18n.t("menu_credits"), r5, s5);
 
         batch.end();
     }
@@ -256,6 +267,11 @@ public class MenuScreen extends BaseScreen {
             return true;
         }
         if (UiHit.hit(r4, xHud, yHud)) {
+            playClick();
+            game.setScreen(new HowToPlayScreen(game));
+            return true;
+        }
+        if (UiHit.hit(r5, xHud, yHud)) {
             playClick();
             game.setScreen(new CreditsScreen(game));
             return true;

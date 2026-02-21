@@ -1,3 +1,6 @@
+// =========================
+// RecordsScreen (con BaseScreen nuevo)
+// =========================
 package com.dani.mijuego.screens;
 
 import com.badlogic.gdx.utils.Array;
@@ -40,128 +43,114 @@ public class RecordsScreen extends BaseScreen {
 
         drawMenuBackgroundIfEnabled(worldW, worldH);
 
-        // Título (MISMO estilo que OptionsScreen)
+        // Título
         drawTitle(I18n.t("RÉCORDS"));
 
-        // Contenido
-        drawRecordsContent();
+        // TOP 10
+        drawTop10();
 
-        // Hint inferior desde BaseScreen
+        // Hint inferior (BaseScreen ya aplica estilo)
         drawBottomBackHintIfEnabled(worldW, worldH);
 
         batch.end();
     }
 
-    // ==========================
-    // MISMO drawTitle que OptionsScreen
-    // ==========================
     private void drawTitle(String text) {
         if (text == null) text = "";
 
-        float scale = 4.2F;
-        fillFont.getData().setScale(scale);
-        outlineFont.getData().setScale(scale);
-
+        setTitleStyle();
         layout.setText(fillFont, text);
 
         float x = cam.position.x - layout.width / 2f;
         float y = cam.position.y + viewport.getWorldHeight() * 0.38f;
 
-        drawOutlined(text, x, y, 4.5F);
-
-        fillFont.getData().setScale(3f);
-        outlineFont.getData().setScale(3f);
+        drawOutlined(text, x, y, TITLE_OUTLINE_PX);
+        resetFontScale();
     }
 
-    private void drawRecordsContent() {
+    private void drawTop10() {
         boolean en = (I18n.getLang() == I18n.Lang.EN);
+        String topLabel = en ? "TOP 10 RUNS" : "TOP 10 PARTIDAS";
 
-        String bestLabel = en ? "BEST" : "MEJOR";
-        String lastLabel = en ? "LAST RUN" : "ULTIMA PARTIDA";
-        String topLabel  = en ? "TOP 10 RUNS" : "TOP 10 PARTIDAS";
-
-        String heightLabel = en ? "HEIGHT" : "ALTURA";
-        String coinsLabel  = en ? "COINS"  : "MONEDAS";
-        String timeLabel   = en ? "TIME"   : "TIEMPO";
-
-        int bestH = GameSave.getBestHeight();
-        int bestC = GameSave.getBestCoins();
-        float bestT = GameSave.getBestTime();
-
-        int lastH = GameSave.getLastHeight();
-        int lastC = GameSave.getLastCoins();
-        float lastT = GameSave.getLastTime();
+        // Cabecera encima del top
+        String header = en ? "HEIGHT | COINS | TIME" : "ALTURA | MONEDAS | TIEMPO";
 
         Array<GameSave.Run> runs = GameSave.getRunsHistorySorted();
 
-        // Posición como HUD (igual que OptionsScreen)
-        float uiLeft = cam.position.x - viewport.getWorldWidth() / 2f;
-        float uiBottom = cam.position.y - viewport.getWorldHeight() / 2f;
+        float worldW = viewport.getWorldWidth();
+        float worldH = viewport.getWorldHeight();
 
-        // Colocación: debajo del título, centrado pero alineado a la izquierda en un bloque
-        float startX = uiLeft + 110f;
-        float startY = cam.position.y + viewport.getWorldHeight() * 0.25f;
+        float centerX = cam.position.x;
+        float centerY = cam.position.y;
 
-        // Bloques grandes (mismo rollo que Options: escala alta)
-        float blockScale = 2.15f;
-        outlineFont.getData().setScale(blockScale);
-        fillFont.getData().setScale(blockScale);
+        // Tamaño más grande
+        float bigScale = 3.0f;
+        fillFont.getData().setScale(bigScale);
+        outlineFont.getData().setScale(bigScale);
 
-        String bestText =
-            bestLabel + "\n" +
-                heightLabel + ": " + bestH + " m\n" +
-                coinsLabel  + ": " + bestC + "\n" +
-                timeLabel   + ": " + formatTime(bestT);
+        int show = (runs == null) ? 0 : Math.min(10, runs.size);
+        String[] lines;
 
-        drawOutlined(bestText, startX, startY, 3.0f);
-
-        float gap = 210f;
-
-        String lastText =
-            lastLabel + "\n" +
-                heightLabel + ": " + lastH + " m\n" +
-                coinsLabel  + ": " + lastC + "\n" +
-                timeLabel   + ": " + formatTime(lastT);
-
-        drawOutlined(lastText, startX, startY - gap, 3.0f);
-
-        // TOP 10 título un pelín más grande
-        float topTitleScale = 2.35f;
-        outlineFont.getData().setScale(topTitleScale);
-        fillFont.getData().setScale(topTitleScale);
-
-        float topY = startY - gap - 240f;
-        drawOutlined(topLabel, startX, topY, 3.2f);
-
-        // Filas más compactas pero aún grandes
-        float rowScale = 1.85f;
-        outlineFont.getData().setScale(rowScale);
-        fillFont.getData().setScale(rowScale);
-
-        float rowY = topY - 70f;
-
-        if (runs == null || runs.size == 0) {
-            drawOutlined(en ? "No runs saved yet." : "Aun no hay partidas guardadas.", startX, rowY, 2.8f);
+        if (show == 0) {
+            lines = new String[] { en ? "No runs saved yet." : "Aun no hay partidas guardadas." };
         } else {
-            int show = Math.min(10, runs.size);
-
+            lines = new String[show];
             for (int i = 0; i < show; i++) {
                 GameSave.Run r = runs.get(i);
-
-                // Línea corta y clara (se ve mucho más "guay" que 3 labels por línea)
-                String row =
+                lines[i] =
                     (i + 1) + ")   " +
                         r.heightMeters + "m   |   " +
                         r.coins + "   |   " +
                         formatTime(r.timeSec);
-
-                drawOutlined(row, startX, rowY - i * 58f, 2.6f);
             }
         }
 
-        // Reset
-        outlineFont.getData().setScale(1f);
-        fillFont.getData().setScale(1f);
+        // Calculamos el ancho máximo del bloque (título + cabecera + filas)
+        float maxW = 0f;
+
+        layout.setText(fillFont, topLabel);
+        maxW = Math.max(maxW, layout.width);
+
+        layout.setText(fillFont, header);
+        maxW = Math.max(maxW, layout.width);
+
+        for (String line : lines) {
+            layout.setText(fillFont, line);
+            maxW = Math.max(maxW, layout.width);
+        }
+
+        // Este es el X del bloque centrado REAL
+        float leftX = centerX - maxW / 2f;
+
+        // Colocación vertical
+        float titleY = centerY + worldH * 0.25f;
+
+        // Título TOP centrado dentro del bloque
+        layout.setText(fillFont, topLabel);
+        float titleX = leftX + (maxW - layout.width) / 2f;
+        drawOutlined(topLabel, titleX, titleY, 4.0f);
+
+        // Cabecera debajo del TOP
+        float headerY = titleY - 90f;
+        layout.setText(fillFont, header);
+        float headerX = leftX + (maxW - layout.width) / 2f;
+        drawOutlined(header, headerX, headerY, 4.0f);
+
+        // Filas (empiezan debajo de la cabecera)
+        float rowSpacing = 80f;
+        float rowY = headerY - 110f;
+
+        for (int i = 0; i < lines.length; i++) {
+            String line = lines[i];
+            layout.setText(fillFont, line);
+
+            float x = leftX + (maxW - layout.width) / 2f;
+            float y = rowY - i * rowSpacing;
+
+            drawOutlined(line, x, y, 4.0f);
+        }
+
+        resetFontScale();
     }
 
     private String formatTime(float sec) {

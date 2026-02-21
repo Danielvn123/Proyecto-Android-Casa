@@ -1,20 +1,13 @@
 package com.dani.mijuego.screens;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
-import com.badlogic.gdx.InputAdapter;
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.g2d.GlyphLayout;
-import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.dani.mijuego.Main;
 import com.dani.mijuego.assets.Assets;
 import com.dani.mijuego.game.GameAudio;
 import com.dani.mijuego.game.GameConfig;
 import com.dani.mijuego.game.I18n;
-import com.dani.mijuego.util.FontUtils;
 
 public class VictoryScreen extends BaseScreen {
 
@@ -22,11 +15,8 @@ public class VictoryScreen extends BaseScreen {
     private final int coins;
     private final GameAudio audio;
 
-    private Texture fondo;
-
-    private BitmapFont fillFont;
-    private BitmapFont outlineFont;
-    private GlyphLayout layout;
+    private Texture victoryTex;
+    private Rectangle btnVolver;
 
     public VictoryScreen(Main game, int score, int coins, GameAudio audio) {
         super(game, GameConfig.VW, GameConfig.VH);
@@ -37,111 +27,95 @@ public class VictoryScreen extends BaseScreen {
 
     @Override
     public void show() {
-        fondo = getTex(Assets.VICTORY); // o el que quieras
-        fillFont = new BitmapFont();
-        outlineFont = new BitmapFont();
-        layout = new GlyphLayout();
+        victoryTex = game.assets.manager.get(Assets.VICTORY, Texture.class);
 
-        fillFont.setColor(Color.WHITE);
-        outlineFont.setColor(Color.BLACK);
+        float w = viewport.getWorldWidth();
 
-        installInput();
-    }
+        float bw = 520f;
+        float bh = 140f;
+        float bx = (w - bw) / 2f;
+        float by = 90f;
 
-    private Texture getTex(String path) {
-        try {
-            if (game.assets.manager.isLoaded(path, Texture.class)) {
-                return game.assets.manager.get(path, Texture.class);
-            }
-        } catch (Exception ignored) {}
-        return null;
-    }
+        btnVolver = new Rectangle(bx, by, bw, bh);
 
-    private void installInput() {
-        Gdx.input.setInputProcessor(new InputAdapter() {
-            @Override
-            public boolean keyDown(int keycode) {
-                if (keycode == Input.Keys.SPACE || keycode == Input.Keys.ENTER ||
-                    keycode == Input.Keys.ESCAPE || keycode == Input.Keys.BACK) {
-                    if (audio != null) audio.playSelectButton();
-                    game.setScreen(new MenuScreen(game));
-                    return true;
-                }
-                return false;
-            }
-
-            @Override
-            public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-                Vector3 hud = unprojectToHud(screenX, screenY);
-                if (audio != null) audio.playSelectButton();
-                game.setScreen(new MenuScreen(game));
-                return true;
-            }
-        });
+        installDefaultInput();
     }
 
     @Override
     public void render(float delta) {
-        ScreenUtils.clear(0,0,0,1);
+        ScreenUtils.clear(0, 0, 0, 1);
         viewport.apply();
         batch.setProjectionMatrix(cam.combined);
 
-        float worldW = viewport.getWorldWidth();
-        float worldH = viewport.getWorldHeight();
-
-        float uiLeft = cam.position.x - worldW / 2f;
-        float uiBottom = cam.position.y - worldH / 2f;
+        float w = viewport.getWorldWidth();
+        float h = viewport.getWorldHeight();
 
         batch.begin();
 
-        if (fondo != null) batch.draw(fondo, uiLeft, uiBottom, worldW, worldH);
+        // Fondo
+        if (victoryTex != null) {
+            batch.draw(
+                victoryTex,
+                cam.position.x - w / 2f,
+                cam.position.y - h / 2f,
+                w,
+                h
+            );
+        }
 
-        float titleScale = 4.0f;
-        outlineFont.getData().setScale(titleScale);
-        fillFont.getData().setScale(titleScale);
+        // =====================
+        // ALTURA Y MONEDAS ARRIBA
+        // =====================
+        float uiLeft   = cam.position.x - w / 2f;
+        float uiTop    = cam.position.y + h / 2f;
+        float uiBottom = cam.position.y - h / 2f;
 
-        String title = I18n.t("victory_title");
-        layout.setText(fillFont, title);
+        font.getData().setScale(4.5f);
+        font.setColor(1f, 1f, 1f, 1f);
 
-        float x = cam.position.x - layout.width / 2f;
-        float y = cam.position.y + 260f;
 
-        FontUtils.drawOutlined(batch, outlineFont, fillFont, title, x, y, 4f);
+        String alturaTxt = I18n.t("go_height") + " " + score + " m";
+        layout.setText(font, alturaTxt);
+        font.draw(batch, layout, uiLeft + 340f, uiTop - 250f);
 
-        float infoScale = 2.4f;
-        outlineFont.getData().setScale(infoScale);
-        fillFont.getData().setScale(infoScale);
+        String monedasTxt = I18n.t("go_coins") + " " + coins;
+        layout.setText(font, monedasTxt);
+        font.draw(batch, layout, uiLeft + 340f, uiTop - 380f);
 
-        String info =
-            I18n.t("victory_height") + " " + score + " m\n" +
-                I18n.t("victory_coins") + " " + coins;
+        // =====================
+        // BOTÓN DENTRO DEL CUADRADO
+        // =====================
+        String btnText = I18n.t("go_restart");
+        layout.setText(font, btnText);
 
-        layout.setText(fillFont, info);
+        float textX = uiLeft
+            + btnVolver.x
+            + (btnVolver.width - layout.width) / 2.5f;
 
-        float ix = cam.position.x - layout.width / 2f;
-        float iy = cam.position.y + 40f;
+        float textY = uiBottom
+            + btnVolver.y
+            + btnVolver.height * 0.95f;
 
-        FontUtils.drawOutlined(batch, outlineFont, fillFont, info, ix, iy, 3.5f);
+        font.draw(batch, layout, textX, textY);
 
-        float tipScale = 1.8f;
-        outlineFont.getData().setScale(tipScale);
-        fillFont.getData().setScale(tipScale);
-
-        String tip = I18n.t("victory_tip");
-        layout.setText(fillFont, tip);
-
-        float tx = cam.position.x - layout.width / 2f;
-        float ty = cam.position.y - 250f;
-
-        FontUtils.drawOutlined(batch, outlineFont, fillFont, tip, tx, ty, 3f);
+        font.getData().setScale(1f);
 
         batch.end();
     }
 
     @Override
-    public void dispose() {
-        super.dispose();
-        if (fillFont != null) fillFont.dispose();
-        if (outlineFont != null) outlineFont.dispose();
+    protected boolean onTouchDownHud(float xHud, float yHud) {
+        if (btnVolver != null && btnVolver.contains(xHud, yHud)) {
+            if (audio != null) audio.playSelectButton();
+            game.setScreen(new MenuScreen(game));
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    protected void onBack() {
+        if (audio != null) audio.playSelectButton();
+        game.setScreen(new MenuScreen(game));
     }
 }
