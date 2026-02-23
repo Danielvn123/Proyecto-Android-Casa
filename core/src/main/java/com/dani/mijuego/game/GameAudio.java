@@ -7,11 +7,12 @@ import com.dani.mijuego.game.entities.EnemyType;
 
 import java.util.EnumMap;
 
+// Clase encargada de gestionar toda la música y efectos de sonido del juego
 public class GameAudio {
 
+    // Rutas de archivos de audio
     private static final String P_FONDO    = "audio/sonidofondo.mp3";
     private static final String P_GAMEOVER = "audio/gameover.mp3";
-
     private static final String P_COIN        = "audio/coin.mp3";
     private static final String P_LEVELUP     = "audio/levelup.mp3";
     private static final String P_SALTO       = "audio/salto.mp3";
@@ -21,25 +22,32 @@ public class GameAudio {
     private static final String P_COGERITEM   = "audio/cogeritem.mp3";
     private static final String P_ESCUDO_ROTO = "audio/escudoroto.mp3";
     private static final String P_WIN         = "audio/win.mp3";
-
     private static final String P_ENEMY_AZUL  = "audio/bichoazul.mp3";
     private static final String P_ENEMY_LILA  = "audio/bicholila.mp3";
     private static final String P_ENEMY_VERDE = "audio/bichoverde.mp3";
     private static final String P_ENEMY_ROJO  = "audio/bichorojo.mp3";
 
-    private boolean enabled = true;
-    private float musicVolume = 1f;
-    private float sfxVolume = 1f;
-    private boolean loaded = false;
 
+    // Configuración general
+    private boolean enabled = true;     // Audio activado o mute total
+    private float musicVolume = 1f;     // Volumen música (0..1)
+    private float sfxVolume = 1f;       // Volumen efectos (0..1)
+    private boolean loaded = false;     // Indica si ya se cargaron los audios
+
+
+    // Música
     private Music fondo;
     private Music gameOver;
 
+
+    // Efectos de sonido
     private Sound coin, levelUp, salto, caida, selectButton, tenis;
     private Sound cogerItem, escudoRoto, win;
 
+    // Mapa de sonidos según tipo de enemigo
     private final EnumMap<EnemyType, Sound> enemySounds = new EnumMap<>(EnemyType.class);
 
+    // Carga todos los audios (solo una vez)
     public void load() {
         if (loaded) return;
         loaded = true;
@@ -66,6 +74,7 @@ public class GameAudio {
     }
 
     // MUTE TOTAL
+    // Activa o desactiva todo el audio
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
         if (!enabled) stopAllMusic();
@@ -75,6 +84,7 @@ public class GameAudio {
         return enabled;
     }
 
+    // Ajusta volumen de música
     public void setMusicVolume(float v) {
         musicVolume = clamp01(v);
         applyMusicVolume();
@@ -84,6 +94,7 @@ public class GameAudio {
         return musicVolume;
     }
 
+    // Ajusta volumen de efectos
     public void setSfxVolume(float v) {
         sfxVolume = clamp01(v);
     }
@@ -92,9 +103,9 @@ public class GameAudio {
         return sfxVolume;
     }
 
-    // =========================
+
     // MUSIC
-    // =========================
+    // Reproduce música de fondo en bucle
     public void playFondo() {
         if (!enabled || fondo == null) return;
 
@@ -104,10 +115,12 @@ public class GameAudio {
         if (!fondo.isPlaying()) fondo.play();
     }
 
+    // Detiene música de fondo
     public void stopFondo() {
         stopMusicQuietly(fondo);
     }
 
+    // Reproduce música de Game Over una vez
     public void playGameOver() {
         if (!enabled || gameOver == null) return;
 
@@ -117,18 +130,18 @@ public class GameAudio {
         gameOver.play();
     }
 
+    // Detiene todas las músicas
     public void stopAllMusic() {
         stopMusicQuietly(fondo);
         stopMusicQuietly(gameOver);
     }
 
-    // =========================
+
     // SFX
-    // =========================
     public void playCoin() { play(coin); }
     public void playLevelUp() { play(levelUp); }
 
-    // Si es salto realmente, mejor nombre:
+    // Salto del jugador
     public void playJump() { play(salto); }
 
     public void playCaida() { play(caida); }
@@ -140,32 +153,38 @@ public class GameAudio {
     public void playEscudoRoto() { play(escudoRoto); }
     public void playVictory() { play(win); }
 
+    // Reproduce sonido según tipo de enemigo
     public void playEnemy(EnemyType type) {
         if (!enabled || type == null) return;
         play(enemySounds.get(type));
     }
 
+    // Método genérico para reproducir un efecto
     private void play(Sound s) {
         if (!enabled || s == null) return;
         s.play(sfxVolume);
     }
 
+    // Aplica volumen actual a músicas cargadas
     private void applyMusicVolume() {
         if (fondo != null) fondo.setVolume(musicVolume);
         if (gameOver != null) gameOver.setVolume(musicVolume);
     }
 
+    // Detiene música sin errores
     private static void stopMusicQuietly(Music m) {
         if (m == null) return;
-        m.stop(); // suficiente (stop ya deja de sonar)
+        m.stop();
     }
 
+    // Limita valor entre 0 y 1
     private static float clamp01(float v) {
         if (v < 0f) return 0f;
         if (v > 1f) return 1f;
         return v;
     }
 
+    // Carga música solo si el archivo existe
     private static Music safeMusic(String path, boolean loop) {
         if (!Gdx.files.internal(path).exists()) return null;
         Music m = Gdx.audio.newMusic(Gdx.files.internal(path));
@@ -173,11 +192,13 @@ public class GameAudio {
         return m;
     }
 
+    // Carga sonido solo si el archivo existe
     private static Sound safeSound(String path) {
         if (!Gdx.files.internal(path).exists()) return null;
         return Gdx.audio.newSound(Gdx.files.internal(path));
     }
 
+    // Libera todos los recursos de audio
     public void dispose() {
         stopAllMusic();
 
@@ -200,10 +221,12 @@ public class GameAudio {
         loaded = false;
     }
 
+    // Libera música sin errores
     private static void disposeQuietly(Music m) {
         if (m != null) m.dispose();
     }
 
+    // Libera sonido sin errores
     private static void disposeQuietly(Sound s) {
         if (s != null) s.dispose();
     }

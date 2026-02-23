@@ -47,10 +47,10 @@ public class SplashScreen extends BaseScreen {
         if (!queuedMenu) {
             queuedMenu = true;
             game.assets.manager.load(Assets.FONDO_MENU, Texture.class);
-            game.assets.manager.load(Assets.BOTONMENU1, Texture.class);
-            game.assets.manager.load(Assets.BOTONMENU2, Texture.class);
-            game.assets.manager.load(Assets.BOTONMENU3, Texture.class);
-            game.assets.manager.load(Assets.BOTONMENU4, Texture.class);
+            game.assets.manager.load(Assets.BOTONMENU, Texture.class);
+            game.assets.manager.load(Assets.BOTONMENU, Texture.class);
+            game.assets.manager.load(Assets.BOTONMENU, Texture.class);
+            game.assets.manager.load(Assets.BOTONMENU, Texture.class);
         }
 
         if (!audioStarted) {

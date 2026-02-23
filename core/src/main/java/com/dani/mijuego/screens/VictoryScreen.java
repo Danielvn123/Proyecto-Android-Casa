@@ -9,7 +9,6 @@ public class VictoryScreen extends EndScreenBase {
 
     private final GameAudio audio;
 
-    // Mantengo EXACTO el constructor que tu juego ya usa
     public VictoryScreen(Main game, int score, int coins, GameAudio audio) {
         super(game, score, coins);
         this.audio = audio;
@@ -17,7 +16,7 @@ public class VictoryScreen extends EndScreenBase {
 
     @Override
     protected void onEnter() {
-        if (audio != null) audio.playSelectButton(); // si prefieres otro sonido, cámbialo aquí
+        if (audio != null) audio.playSelectButton();
     }
 
     @Override
@@ -27,7 +26,6 @@ public class VictoryScreen extends EndScreenBase {
 
     @Override
     protected String buttonTextKey() {
-        // En tu Victory original también usabas go_restart
         return "go_restart";
     }
 

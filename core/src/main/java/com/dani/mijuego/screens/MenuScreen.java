@@ -17,8 +17,8 @@ public class MenuScreen extends BaseScreen {
     private final UiButton btnPlay    = new UiButton(0, 0, 1, 1);
     private final UiButton btnRecords = new UiButton(0, 0, 1, 1);
     private final UiButton btnOptions = new UiButton(0, 0, 1, 1);
-    private final UiButton btnHowTo   = new UiButton(0, 0, 1, 1);
-    private final UiButton btnCredits = new UiButton(0, 0, 1, 1);
+    private final UiButton  btnCredits  = new UiButton(0, 0, 1, 1);
+    private final UiButton btnHowTo = new UiButton(0, 0, 1, 1);
 
     public MenuScreen(Main game) {
         super(game, GameConfig.VW, GameConfig.VH);
@@ -32,11 +32,11 @@ public class MenuScreen extends BaseScreen {
         super.show();
 
         // Texturas (unifica: ya no hay safeGetTex duplicado)
-        b1 = getTex(Assets.BOTONMENU1);
-        b2 = getTex(Assets.BOTONMENU2);
-        b3 = getTex(Assets.BOTONMENU3);
-        b4 = getTex(Assets.BOTONMENU4);
-        b5 = getTex(Assets.BOTONMENU1); // reutilizamos como en tu proyecto
+        b1 = getTex(Assets.BOTONMENU);
+        b2 = getTex(Assets.BOTONMENU);
+        b3 = getTex(Assets.BOTONMENU);
+        b4 = getTex(Assets.BOTONMENU);
+        b5 = getTex(Assets.BOTONMENU);
 
         layoutButtons();
         installDefaultInput();
@@ -66,8 +66,8 @@ public class MenuScreen extends BaseScreen {
         btnPlay.set(x, startY, btnW, btnH);
         btnRecords.set(x, startY - 1f * (btnH + gap), btnW, btnH);
         btnOptions.set(x, startY - 2f * (btnH + gap), btnW, btnH);
-        btnHowTo.set(x, startY - 3f * (btnH + gap), btnW, btnH);
-        btnCredits.set(x, startY - 4f * (btnH + gap), btnW, btnH);
+        btnCredits.set(x, startY - 3f * (btnH + gap), btnW, btnH);
+        btnHowTo.set(x, startY - 4f * (btnH + gap), btnW, btnH);
     }
 
     @Override
@@ -88,8 +88,8 @@ public class MenuScreen extends BaseScreen {
         btnPlay.update(hud.x, hud.y, delta);
         btnRecords.update(hud.x, hud.y, delta);
         btnOptions.update(hud.x, hud.y, delta);
-        btnHowTo.update(hud.x, hud.y, delta);
         btnCredits.update(hud.x, hud.y, delta);
+        btnHowTo.update(hud.x, hud.y, delta);
 
         batch.begin();
 
@@ -98,8 +98,8 @@ public class MenuScreen extends BaseScreen {
         btnPlay.drawTexture(batch, b1, uiLeft, uiBottom);
         btnRecords.drawTexture(batch, b2, uiLeft, uiBottom);
         btnOptions.drawTexture(batch, b3, uiLeft, uiBottom);
-        btnHowTo.drawTexture(batch, b4, uiLeft, uiBottom);
-        btnCredits.drawTexture(batch, b5, uiLeft, uiBottom);
+        btnCredits.drawTexture(batch, b4, uiLeft, uiBottom);
+        btnHowTo.drawTexture(batch, b5, uiLeft, uiBottom);
 
         btnPlay.drawCenteredOutlinedText(batch, outlineFont, fillFont, layout,
             I18n.t("menu_play"), uiLeft, uiBottom, UI_SCALE, UI_OUTLINE_PX);
@@ -110,11 +110,11 @@ public class MenuScreen extends BaseScreen {
         btnOptions.drawCenteredOutlinedText(batch, outlineFont, fillFont, layout,
             I18n.t("menu_options"), uiLeft, uiBottom, UI_SCALE, UI_OUTLINE_PX);
 
-        btnHowTo.drawCenteredOutlinedText(batch, outlineFont, fillFont, layout,
-            I18n.t("menu_instructions"), uiLeft, uiBottom, UI_SCALE, UI_OUTLINE_PX);
-
         btnCredits.drawCenteredOutlinedText(batch, outlineFont, fillFont, layout,
             I18n.t("menu_credits"), uiLeft, uiBottom, UI_SCALE, UI_OUTLINE_PX);
+
+        btnHowTo.drawCenteredOutlinedText(batch, outlineFont, fillFont, layout,
+            I18n.t("menu_instructions"), uiLeft, uiBottom, UI_SCALE, UI_OUTLINE_PX);
 
         batch.end();
     }
@@ -140,15 +140,15 @@ public class MenuScreen extends BaseScreen {
             return true;
         }
 
-        if (btnHowTo.hit(xHud, yHud)) {
-            click();
-            game.setScreen(new HowToPlayScreen(game, this));
-            return true;
-        }
-
         if (btnCredits.hit(xHud, yHud)) {
             click();
             game.setScreen(new CreditsScreen(game, this));
+            return true;
+        }
+
+        if (btnHowTo.hit(xHud, yHud)) {
+            click();
+            game.setScreen(new HowToPlayScreen(game, this));
             return true;
         }
 

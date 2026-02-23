@@ -3,18 +3,24 @@ package com.dani.mijuego.game;
 import java.util.HashMap;
 import java.util.Map;
 
+// Clase de traducciones del juego (i18n)
+// Guarda textos en ES/EN y devuelve el que toque según el idioma activo
 public final class I18n {
 
+    // Idiomas disponibles
     public enum Lang { ES, EN }
 
+    // Idioma actual (por defecto español)
     private static Lang lang = Lang.ES;
 
+    // Mapas de traducciones por clave
     private static final Map<String, String> ES = new HashMap<>();
     private static final Map<String, String> EN = new HashMap<>();
 
+    // Bloque estático: se ejecuta una vez y rellena las traducciones
     static {
 
-        // ===== MENU =====
+        // MENU
         ES.put("menu_play", "JUGAR");
         ES.put("menu_records", "RÉCORDS");
         ES.put("menu_options", "OPCIONES");
@@ -27,7 +33,7 @@ public final class I18n {
         EN.put("menu_credits", "CREDITS");
         EN.put("menu_instructions", "INSTRUCTIONS");
 
-        // ===== GAME HUD / MENSAJES =====
+        // GAME HUD / MENSAJES
         ES.put("hud_height", "Altura");
         EN.put("hud_height", "Height");
 
@@ -46,7 +52,7 @@ public final class I18n {
         ES.put("msg_win", "GANASTE LA PARTIDA");
         EN.put("msg_win", "YOU WON");
 
-        // ===== PAUSA =====
+        // PAUSA
         ES.put("pause_continue", "CONTINUAR");
         ES.put("pause_settings", "AJUSTES");
         ES.put("pause_restart", "VOLVER A EMPEZAR");
@@ -57,7 +63,7 @@ public final class I18n {
         EN.put("pause_restart", "RESTART");
         EN.put("pause_exit", "EXIT");
 
-        // ===== OPCIONES =====
+        // OPCIONES
         ES.put("opt_language", "IDIOMA");
         ES.put("opt_language_value_es", "CASTELLANO");
         ES.put("opt_language_value_en", "INGLÉS");
@@ -76,7 +82,7 @@ public final class I18n {
         EN.put("opt_on", "ON");
         EN.put("opt_off", "OFF");
 
-        // ===== SELECTOR DE MODO =====
+        // SELECTOR DE MODO
         ES.put("mode_title", "MODO DE JUEGO");
         ES.put("mode_infinite", "INFINITO");
         ES.put("mode_normal", "NORMAL");
@@ -85,14 +91,15 @@ public final class I18n {
         EN.put("mode_infinite", "INFINITE");
         EN.put("mode_normal", "NORMAL");
 
-        // ===== SPLASH =====
+        // SPLASH
         ES.put("splash_tap", "TOCA PARA\n EMPEZAR");
         EN.put("splash_tap", "TAP TO\n START");
 
-        // ===== CREDITS =====
+        // CREDITS
         ES.put("credits_title", "CRÉDITOS");
         EN.put("credits_title", "CREDITS");
 
+        // Texto largo de créditos
         ES.put("credits_body",
             "Autor:\n" +
                 "Daniel Vilas Noya\n" +
@@ -117,23 +124,36 @@ public final class I18n {
                 "Gemini"
         );
 
-        // ===== HOW TO PLAY =====
+        // HOW TO PLAY
         ES.put("how_title", "INSTRUCCIONES");
         EN.put("how_title", "HOW TO PLAY");
 
+        // Texto largo de instrucciones
         ES.put("how_body",
             "OBJETIVO\n" +
                 "SUBE LO MÁS ALTO POSIBLE\n" +
+                "CONSIGUE TODAS LAS MONEDAS QUE PUEDAS\n" +
                 "\n" +
-                "CONTROLES\n" +
+                "CONTROLES MÓVIL\n" +
                 "- TOCA O PULSA PARA EMPEZAR\n" +
-                "- MUEVE IZQUIERDA / DERECHA\n" +
+                "- INCLINA EL MÓVIL DE IZQUIERDA A DERECHA\n" +
                 "- CAER SOBRE PLATAFORMAS TE HACE SALTAR\n" +
+                "\n" +
+                "CONTROLES ORDENADOR\n" +
+                "- TOCA O PULSA PARA EMPEZAR\n" +
+                "- MUEVE EL PERSONAJE CON A,W,S,D\n" +
+                "- O USA LAS FLECHAS DEL TECLADO\n" +
                 "\n" +
                 "POWER UPS\n" +
                 "- MONEDA: SUMA PUNTOS\n" +
-                "- SETA: SALTAS MÁS ALTO\n" +
-                "- ESCUDO: BLOQUEA GOLPES\n"
+                "- SETA: INVIERTE LOS CONTROLES\n" +
+                "- TENIS: SALTAS MÁS ALTO\n" +
+                "- ESCUDO: BLOQUEA UN GOLPE\n" +
+                "\n" +
+                "ENEMIGOS\n" +
+                "- EVÍTALOS O PERDERÁS LA PARTIDA\n" +
+                "\n" +
+                "CUANTO MÁS SUBAS, MAYOR SERÁ LA DIFICULTAD\n"
         );
 
         EN.put("how_body",
@@ -151,7 +171,7 @@ public final class I18n {
                 "- SHIELD: BLOCK HITS\n"
         );
 
-        // ===== VICTORY =====
+        // VICTORY
         ES.put("victory_title", "VICTORIA");
         ES.put("victory_height", "ALTURA:");
         ES.put("victory_coins", "MONEDAS:");
@@ -162,7 +182,7 @@ public final class I18n {
         EN.put("victory_coins", "COINS:");
         EN.put("victory_tip", "TAP TO RETURN TO MENU");
 
-        // ===== GAME OVER =====
+        // GAME OVER
         ES.put("go_height", "Altura X");
         ES.put("go_coins", "Monedas X");
         ES.put("go_restart", "REINICIAR");
@@ -171,31 +191,42 @@ public final class I18n {
         EN.put("go_coins", "Coins X");
         EN.put("go_restart", "RESTART");
 
-        // ===== UI =====
+        // UI
         ES.put("ui_back_hint", "PULSA PARA IR PARA ATRÁS");
         EN.put("ui_back_hint", "TAP TO GO BACK");
     }
 
+    // Evita instanciar la clase (todo es estático)
     private I18n() {}
 
+    // Cambia el idioma actual
     public static void setLang(Lang l) {
         if (l != null) lang = l;
     }
 
+    // Devuelve el idioma actual
     public static Lang getLang() {
         return lang;
     }
 
+    // Alterna entre ES y EN
     public static void toggle() {
         lang = (lang == Lang.ES) ? Lang.EN : Lang.ES;
     }
 
+    // Devuelve el texto traducido para una clave
     public static String t(String key) {
         if (key == null) return "";
+
+        // Busca primero en el idioma actual
         String v = (lang == Lang.ES) ? ES.get(key) : EN.get(key);
+
+        // Si no existe, intenta buscar en el otro idioma como fallback
         if (v == null) {
             v = (lang == Lang.ES) ? EN.get(key) : ES.get(key);
         }
+
+        // Si sigue sin existir, devuelve la propia clave para detectar errores
         return (v == null) ? key : v;
     }
 }

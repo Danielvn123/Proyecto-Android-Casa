@@ -36,9 +36,9 @@ public class PauseScreen extends BaseScreen {
     public void show() {
         super.show();
 
-        b1 = getTex(Assets.BOTONMENU1);
-        b3 = getTex(Assets.BOTONMENU3);
-        b4 = getTex(Assets.BOTONMENU4);
+        b1 = getTex(Assets.BOTONMENU);
+        b3 = getTex(Assets.BOTONMENU);
+        b4 = getTex(Assets.BOTONMENU);
 
         Gdx.input.setCatchKey(Input.Keys.BACK, true);
 

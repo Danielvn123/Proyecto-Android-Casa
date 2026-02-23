@@ -27,24 +27,20 @@ public abstract class BaseScreen extends ScreenAdapter {
     protected OrthographicCamera cam;
     protected Viewport viewport;
 
-    protected BitmapFont font;         // legacy (algunas pantallas lo usaban)
+    protected BitmapFont font;
     protected BitmapFont fillFont;
     protected BitmapFont outlineFont;
     protected GlyphLayout layout;
 
     private final Vector3 tmp = new Vector3();
 
-    // ==========================
     // MENU CHROME (fondo + hint abajo)
-    // ==========================
     private Texture menuBgTex = null;
 
     protected static final float BACK_HINT_ZONE_H = 220f; // zona inferior tocable
     protected static final float BACK_HINT_Y = 120f;      // altura del texto
 
-    // ==========================
     // Estilo global texto
-    // ==========================
     protected static final float TITLE_SCALE = 3.0f;
     protected static final float TITLE_OUTLINE_PX = 3.5f;
 
@@ -86,15 +82,11 @@ public abstract class BaseScreen extends ScreenAdapter {
 
     protected void onResize() {}
 
-    // ==========================
     // Activadores (override en screens)
-    // ==========================
     protected boolean useMenuBackground() { return false; }
     protected boolean useBottomBackHint() { return false; }
 
-    // ==========================
     // HUD unproject
-    // ==========================
     protected Vector3 unprojectToHud(int screenX, int screenY) {
         tmp.set(screenX, screenY, 0f);
         viewport.unproject(tmp);
@@ -111,9 +103,7 @@ public abstract class BaseScreen extends ScreenAdapter {
         return tmp;
     }
 
-    // ==========================
     // Assets helper (Quita safeGetTex repetido)
-    // ==========================
     protected Texture getTex(String assetPath) {
         try {
             return game.assets.manager.get(assetPath, Texture.class);
@@ -123,9 +113,7 @@ public abstract class BaseScreen extends ScreenAdapter {
         }
     }
 
-    // ==========================
     // Estilo global: blanco/negro
-    // ==========================
     protected void applyDefaultTextStyle() {
         if (batch != null) batch.setColor(1f, 1f, 1f, 1f);
         if (fillFont != null) fillFont.setColor(1f, 1f, 1f, 1f);
@@ -143,9 +131,7 @@ public abstract class BaseScreen extends ScreenAdapter {
         FontUtils.drawOutlined(batch, outlineFont, fillFont, text, x, y, outlinePx);
     }
 
-    // ==========================
     // NUEVO: título centrado reutilizable
-    // ==========================
     protected void drawCenteredTitle(String text, float yWorld) {
         if (text == null) text = "";
         applyDefaultTextStyle();
@@ -161,9 +147,7 @@ public abstract class BaseScreen extends ScreenAdapter {
         resetFontScale();
     }
 
-    // ==========================
     // NUEVO: multiline centrado reutilizable
-    // ==========================
     protected void drawCenteredMultiline(String text,
                                          float startY,
                                          float lineSpacing,
@@ -189,9 +173,7 @@ public abstract class BaseScreen extends ScreenAdapter {
         resetFontScale();
     }
 
-    // ==========================
     // Fondo tipo menú
-    // ==========================
     protected Texture getMenuBackground() {
         if (menuBgTex != null) return menuBgTex;
 
@@ -221,9 +203,7 @@ public abstract class BaseScreen extends ScreenAdapter {
         batch.draw(bg, uiLeft, uiBottom, worldW, worldH);
     }
 
-    // ==========================
     // Hint abajo + tap para volver
-    // ==========================
     protected void drawBottomBackHintIfEnabled(float worldW, float worldH) {
         if (!useBottomBackHint()) return;
 
@@ -256,9 +236,7 @@ public abstract class BaseScreen extends ScreenAdapter {
         return false;
     }
 
-    // ==========================
     // Helpers (compat)
-    // ==========================
     protected void setTitleStyle() {
         applyDefaultTextStyle();
         fillFont.getData().setScale(TITLE_SCALE);
@@ -271,9 +249,7 @@ public abstract class BaseScreen extends ScreenAdapter {
         outlineFont.getData().setScale(UI_SCALE);
     }
 
-    // ==========================
     // Input por defecto
-    // ==========================
     protected void installDefaultInput() {
         Gdx.input.setInputProcessor(new InputAdapter() {
 
@@ -297,9 +273,7 @@ public abstract class BaseScreen extends ScreenAdapter {
         });
     }
 
-    // ==========================
     // Hooks
-    // ==========================
     protected void onBack() {}
 
     protected boolean onTouchDownHud(float xHud, float yHud) {

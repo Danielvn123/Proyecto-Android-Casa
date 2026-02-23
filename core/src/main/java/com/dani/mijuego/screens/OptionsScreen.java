@@ -47,7 +47,7 @@ public class OptionsScreen extends BaseScreen {
 
         texOn = getTex(Assets.BTN_ON);
         texOff = getTex(Assets.BTN_OFF);
-        texMenuBtn = getTex(Assets.BOTONMENU1);
+        texMenuBtn = getTex(Assets.BOTONMENU);
 
         // Aplica música guardada
         if (game != null && game.audio != null) {

@@ -31,8 +31,8 @@ public class ModeSelectScreen extends BaseScreen {
     public void show() {
         super.show();
 
-        b1 = getTex(Assets.BOTONMENU1);
-        b2 = getTex(Assets.BOTONMENU2);
+        b1 = getTex(Assets.BOTONMENU);
+        b2 = getTex(Assets.BOTONMENU);
 
         layoutButtons();
         installDefaultInput();

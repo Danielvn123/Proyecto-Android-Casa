@@ -84,6 +84,8 @@ public class GameScreen extends BaseScreen {
 
     private Texture fondoEstrellas;
     private boolean starsEnabled = false;
+
+    private Texture fondoEstrellasColores;
     private static final float STARS_PARALLAX = 0.18f;
     private static final float STARS_ALPHA = 0.95f;
 
@@ -132,7 +134,6 @@ public class GameScreen extends BaseScreen {
     // ==========================
     private Texture bootsTex;
     private final JumpBootsSystem bootsSystem = new JumpBootsSystem();
-    private int bootsJumpsLeft = 0;
     private static final float BOOTS_MULT = 1.9f;
     private static final float BOOTS_CHANCE = 0.06f;
     private static final float BOOTS_DRAW_SCALE = 1.6f;
@@ -144,7 +145,6 @@ public class GameScreen extends BaseScreen {
     // ==========================
     private Texture shieldTex;
     private final ShieldSystem shieldSystem = new ShieldSystem();
-    private boolean shieldActive = false;
     private static final float SHIELD_CHANCE = 0.05f;
     private static final float SHIELD_DRAW_SCALE = 1.6f;
 
@@ -160,9 +160,6 @@ public class GameScreen extends BaseScreen {
     private static final float SETA_CHANCE = 0.04f;
     private static final float SETA_DURATION = 5.0f;
     private static final float SETA_DRAW_SCALE = 1.6f;
-
-    private boolean setaActive = false;
-    private float setaTimer = 0f;
 
     // ==========================
     // FINAL MODO NIVELES (plataforma + bandera)
@@ -243,39 +240,34 @@ public class GameScreen extends BaseScreen {
 
     private final JumpBootsSystem.OnBootsCollected onBootsCollected = new JumpBootsSystem.OnBootsCollected() {
         @Override public void onBootsCollected() {
-            bootsJumpsLeft = 1;
+            if (player != null) player.giveBoots(1);
             audio.playCogerItem();
         }
     };
 
     private final ShieldSystem.OnShieldCollected onShieldCollected = new ShieldSystem.OnShieldCollected() {
         @Override public void onShieldCollected() {
-            // Si la seta está activa, el escudo no hace efecto (pero se recoge y suena)
-            if (!setaActive) shieldActive = true;
+            if (player != null) player.tryActivateShield(); // si seta activa, no hace efecto
             audio.playCogerItem();
         }
     };
 
     private final MushroomSystem.OnMushroomCollected onMushroomCollected = new MushroomSystem.OnMushroomCollected() {
         @Override public void onMushroomCollected() {
-            // Si hay escudo activo: se rompe y la seta no hace efecto
-            if (shieldActive) {
-                shieldActive = false;
+            if (player == null) return;
+
+            boolean activated = player.tryActivateSeta(SETA_DURATION);
+            if (!activated) {
+                // Había escudo y se rompió, la seta no se activó
                 audio.playEscudoRoto();
-                audio.playCogerItem();
-                return;
             }
-            // Si no hay escudo: activa seta
-            setaActive = true;
-            setaTimer = SETA_DURATION;
             audio.playCogerItem();
         }
     };
 
     private final EnemySystem.OnEnemyHit onEnemyHit = new EnemySystem.OnEnemyHit() {
         @Override public boolean onEnemyHit(EnemyType type) {
-            if (shieldActive) {
-                shieldActive = false;
+            if (player != null && player.blockEnemyHitIfShield()) {
                 audio.playEscudoRoto();
                 return true; // bloqueado
             }
@@ -320,6 +312,7 @@ public class GameScreen extends BaseScreen {
         // Layers
         fondoNubes     = mustTex(Assets.NUBES);
         fondoEstrellas = mustTex(Assets.ESTRELLAS);
+        fondoEstrellasColores = mustTex(Assets.ESTRELLASCOLORES);
 
         // Plataformas
         plataformaRuinas = mustTex(Assets.PLAT_RUINAS);
@@ -458,12 +451,6 @@ public class GameScreen extends BaseScreen {
         bootsSystem.reset();
         shieldSystem.reset();
         mushroomSystem.reset();
-
-        bootsJumpsLeft = 0;
-        shieldActive = false;
-
-        setaActive = false;
-        setaTimer = 0f;
 
         coinSystem.coins.clear();
         coinSystem.collected = 0;
@@ -622,7 +609,13 @@ public class GameScreen extends BaseScreen {
 
         // 2) layer nubes / estrellas
         if (cloudsEnabled) drawTiledParallaxLayer(fondoNubes, CLOUDS_PARALLAX, CLOUDS_ALPHA, worldW, worldH);
-        if (starsEnabled)  drawTiledParallaxLayer(fondoEstrellas, STARS_PARALLAX, STARS_ALPHA, worldW, worldH);
+        if (starsEnabled) {
+            Texture starsTex = (nivelVisual == 3 && fondoEstrellasColores != null)
+                ? fondoEstrellasColores
+                : fondoEstrellas;
+
+            drawTiledParallaxLayer(starsTex, STARS_PARALLAX, STARS_ALPHA, worldW, worldH);
+        }
 
         // 3) ruinas
         if (!ruins.disabled && ruinasTex != null) {
@@ -732,11 +725,11 @@ public class GameScreen extends BaseScreen {
             Texture base = player.getTexture();
             Texture toDraw = base;
 
-            if (shieldActive) {
+            if (player.isShieldActive()) {
                 if (base == pIzqTex) toDraw = pIzqShieldTex;
                 else if (base == pDerTex) toDraw = pDerShieldTex;
                 else toDraw = pIdleShieldTex;
-            } else if (setaActive) {
+            } else if (player.isSetaActive()) {
                 if (base == pIzqTex) toDraw = pIzqSetaTex;
                 else if (base == pDerTex) toDraw = pDerSetaTex;
                 else toDraw = pIdleSetaTex;
@@ -793,9 +786,9 @@ public class GameScreen extends BaseScreen {
 
             batch.draw(monedaTex, coinX, coinY, coinSize, coinSize);
 
-            boolean showBoots  = bootsJumpsLeft > 0;
-            boolean showShield = shieldActive;
-            boolean showSeta   = setaActive;
+            boolean showBoots  = (player != null && player.getBootsJumpsLeft() > 0);
+            boolean showShield = (player != null && player.isShieldActive());
+            boolean showSeta   = (player != null && player.isSetaActive());
 
             int count = 0;
             if (showShield && shieldTex != null) count++;
@@ -931,16 +924,9 @@ public class GameScreen extends BaseScreen {
             return;
         }
 
-        // Movimiento horizontal (wrap) + seta (invertir)
+        // Movimiento horizontal (wrap). La inversión por seta ya está dentro de Player
         if (player != null) {
-            float oldX = player.rect.x;
-
             player.updateHorizontal(dt);
-
-            if (setaActive && !shieldActive) {
-                float dx = player.rect.x - oldX;
-                player.rect.x = oldX - dx;
-            }
 
             float w = player.rect.width;
             float worldW = GameConfig.VW;
@@ -1083,14 +1069,8 @@ public class GameScreen extends BaseScreen {
 
         float killY = bottomVisible - 200f;
 
-        // Timer SETA
-        if (setaActive) {
-            setaTimer -= dt;
-            if (setaTimer <= 0f) {
-                setaTimer = 0f;
-                setaActive = false;
-            }
-        }
+        // Timers de power-ups del jugador
+        if (player != null) player.updateEffects(dt);
 
         // Systems
         coinSystem.update(player, killY, onCoinCollected);
@@ -1330,11 +1310,11 @@ public class GameScreen extends BaseScreen {
         player.rect.y = bestTop;
 
         float jump = GameConfig.JUMP_VEL;
+
         boolean usedBoots = false;
 
-        if (bootsJumpsLeft > 0) {
+        if (player != null && player.consumeBootsJump()) {
             jump *= BOOTS_MULT;
-            bootsJumpsLeft--;
             usedBoots = true;
         }
 

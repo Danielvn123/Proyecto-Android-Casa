@@ -17,14 +17,12 @@ bichos/BichoLila.png
 bichos/BichoRojo.png
 bichos/BichoVerde.png
 bichos/Bichoazul.png
-botones/botonmenu1.png
-botones/botonmenu2.png
-botones/botonmenu3.png
-botones/botonmenu4.png
+botones/botonmenu.png
 botones/botonoff.png
 botones/botonon.png
 botones/pause.png
 fondos/estrellas.png
+fondos/estrellascolores.png
 fondos/fondoamarillo.png
 fondos/fondoazul.png
 fondos/fondolila.png
