@@ -14,7 +14,7 @@ import com.dani.mijuego.util.UiButton;
 
 public class PauseScreen extends BaseScreen {
 
-    private Texture b1, b3, b4;
+    private Texture btnTex;
 
     private final UiButton btnContinue = new UiButton(0, 0, 1, 1);
     private final UiButton btnRestart  = new UiButton(0, 0, 1, 1);
@@ -36,9 +36,7 @@ public class PauseScreen extends BaseScreen {
     public void show() {
         super.show();
 
-        b1 = getTex(Assets.BOTONMENU);
-        b3 = getTex(Assets.BOTONMENU);
-        b4 = getTex(Assets.BOTONMENU);
+        btnTex = getTex(Assets.BOTONMENU);
 
         Gdx.input.setCatchKey(Input.Keys.BACK, true);
 
@@ -97,9 +95,9 @@ public class PauseScreen extends BaseScreen {
 
         drawMenuBackgroundIfEnabled(worldW, worldH);
 
-        btnContinue.drawTexture(batch, b1, uiLeft, uiBottom);
-        btnRestart.drawTexture(batch, b3, uiLeft, uiBottom);
-        btnExit.drawTexture(batch, b4, uiLeft, uiBottom);
+        btnContinue.drawTexture(batch, btnTex, uiLeft, uiBottom);
+        btnRestart.drawTexture(batch, btnTex, uiLeft, uiBottom);
+        btnExit.drawTexture(batch, btnTex, uiLeft, uiBottom);
 
         btnContinue.drawCenteredOutlinedText(batch, outlineFont, fillFont, layout,
             I18n.t("pause_continue"), uiLeft, uiBottom, UI_SCALE, UI_OUTLINE_PX);

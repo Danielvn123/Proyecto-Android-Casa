@@ -3,7 +3,6 @@ package com.dani.mijuego.screens;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputAdapter;
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.ScreenUtils;
@@ -35,6 +34,8 @@ public class SplashScreen extends BaseScreen {
     @Override
     public void show() {
 
+        super.show();
+
         fillFont.setColor(1f, 1f, 1f, 1f);
         outlineFont.setColor(0f, 0f, 1f, 1f);
 
@@ -46,11 +47,12 @@ public class SplashScreen extends BaseScreen {
 
         if (!queuedMenu) {
             queuedMenu = true;
-            game.assets.manager.load(Assets.FONDO_MENU, Texture.class);
-            game.assets.manager.load(Assets.BOTONMENU, Texture.class);
-            game.assets.manager.load(Assets.BOTONMENU, Texture.class);
-            game.assets.manager.load(Assets.BOTONMENU, Texture.class);
-            game.assets.manager.load(Assets.BOTONMENU, Texture.class);
+            if (!game.assets.manager.isLoaded(Assets.FONDO_MENU, Texture.class)) {
+                game.assets.manager.load(Assets.FONDO_MENU, Texture.class);
+            }
+            if (!game.assets.manager.isLoaded(Assets.BOTONMENU, Texture.class)) {
+                game.assets.manager.load(Assets.BOTONMENU, Texture.class);
+            }
         }
 
         if (!audioStarted) {
@@ -61,22 +63,22 @@ public class SplashScreen extends BaseScreen {
 
         Gdx.input.setInputProcessor(new InputAdapter() {
 
+            private void goMenuIfReady() {
+                if (!canContinue) return;
+                audio.stopFondo();
+                game.setScreen(new MenuScreen(game));
+            }
+
             @Override
             public boolean touchDown(int x, int y, int p, int b) {
-                if (canContinue) {
-                    audio.stopFondo();
-                    game.setScreen(new MenuScreen(game));
-                }
+                goMenuIfReady();
                 return true;
             }
 
             @Override
             public boolean keyDown(int keycode) {
                 if (keycode == Input.Keys.SPACE || keycode == Input.Keys.ENTER) {
-                    if (canContinue) {
-                        audio.stopFondo();
-                        game.setScreen(new MenuScreen(game));
-                    }
+                    goMenuIfReady();
                     return true;
                 }
                 return false;
@@ -127,8 +129,7 @@ public class SplashScreen extends BaseScreen {
 
         FontUtils.drawOutlined(batch, outlineFont, fillFont, msg, x, y, 3.5f);
 
-        outlineFont.setColor(Color.BLACK);
-        fillFont.setColor(Color.WHITE);
+        applyDefaultTextStyle();
 
         batch.end();
     }

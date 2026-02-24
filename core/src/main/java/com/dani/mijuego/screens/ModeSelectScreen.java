@@ -7,12 +7,13 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import com.dani.mijuego.Main;
 import com.dani.mijuego.assets.Assets;
 import com.dani.mijuego.game.GameConfig;
+import com.dani.mijuego.game.GameMode;
 import com.dani.mijuego.game.I18n;
 import com.dani.mijuego.util.UiButton;
 
 public class ModeSelectScreen extends BaseScreen {
 
-    private Texture b1, b2;
+    private Texture btnTex;
 
     private final UiButton btnInfinite = new UiButton(0, 0, 1, 1);
     private final UiButton btnLevels   = new UiButton(0, 0, 1, 1);
@@ -31,8 +32,7 @@ public class ModeSelectScreen extends BaseScreen {
     public void show() {
         super.show();
 
-        b1 = getTex(Assets.BOTONMENU);
-        b2 = getTex(Assets.BOTONMENU);
+        btnTex = getTex(Assets.BOTONMENU);
 
         layoutButtons();
         installDefaultInput();
@@ -84,12 +84,10 @@ public class ModeSelectScreen extends BaseScreen {
 
         drawMenuBackgroundIfEnabled(worldW, worldH);
 
-        // Título (usa helper común)
         drawCenteredTitle(I18n.t("mode_title"), uiBottom + worldH * 0.88f);
 
-        // Botones
-        btnInfinite.drawTexture(batch, b1, uiLeft, uiBottom);
-        btnLevels.drawTexture(batch, b2, uiLeft, uiBottom);
+        btnInfinite.drawTexture(batch, btnTex, uiLeft, uiBottom);
+        btnLevels.drawTexture(batch, btnTex, uiLeft, uiBottom);
 
         btnInfinite.drawCenteredOutlinedText(batch, outlineFont, fillFont, layout,
             I18n.t("mode_infinite"), uiLeft, uiBottom, UI_SCALE, UI_OUTLINE_PX);
@@ -107,13 +105,13 @@ public class ModeSelectScreen extends BaseScreen {
 
         if (btnInfinite.hit(xHud, yHud)) {
             click();
-            game.setScreen(new GameScreen(game, GameScreen.GameMode.INFINITE));
+            game.setScreen(new GameScreen(game, GameMode.INFINITE));
             return true;
         }
 
         if (btnLevels.hit(xHud, yHud)) {
             click();
-            game.setScreen(new GameScreen(game, GameScreen.GameMode.LEVELS));
+            game.setScreen(new GameScreen(game, GameMode.LEVELS));
             return true;
         }
 

@@ -1,0 +1,4 @@
+com.dani.mijuego.test.android-androidTest-0 F:\Proyecto 3\Proyecto\android\build\generated\res\resValues\androidTest\debug
+com.dani.mijuego.test.android-mergeDebugAndroidTestResources-1 F:\Proyecto 3\Proyecto\android\build\intermediates\incremental\debugAndroidTest\mergeDebugAndroidTestResources\merged.dir
+com.dani.mijuego.test.android-mergeDebugAndroidTestResources-2 F:\Proyecto 3\Proyecto\android\build\intermediates\incremental\debugAndroidTest\mergeDebugAndroidTestResources\stripped.dir
+com.dani.mijuego.test.android-debugAndroidTest-3 F:\Proyecto 3\Proyecto\android\build\intermediates\merged_res\debugAndroidTest\mergeDebugAndroidTestResources

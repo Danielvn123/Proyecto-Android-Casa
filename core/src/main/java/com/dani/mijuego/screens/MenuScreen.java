@@ -12,13 +12,13 @@ import com.dani.mijuego.util.UiButton;
 
 public class MenuScreen extends BaseScreen {
 
-    private Texture b1, b2, b3, b4, b5;
+    private Texture btnTex;
 
     private final UiButton btnPlay    = new UiButton(0, 0, 1, 1);
     private final UiButton btnRecords = new UiButton(0, 0, 1, 1);
     private final UiButton btnOptions = new UiButton(0, 0, 1, 1);
-    private final UiButton  btnCredits  = new UiButton(0, 0, 1, 1);
-    private final UiButton btnHowTo = new UiButton(0, 0, 1, 1);
+    private final UiButton btnCredits = new UiButton(0, 0, 1, 1);
+    private final UiButton btnHowTo   = new UiButton(0, 0, 1, 1);
 
     public MenuScreen(Main game) {
         super(game, GameConfig.VW, GameConfig.VH);
@@ -31,12 +31,7 @@ public class MenuScreen extends BaseScreen {
     public void show() {
         super.show();
 
-        // Texturas (unifica: ya no hay safeGetTex duplicado)
-        b1 = getTex(Assets.BOTONMENU);
-        b2 = getTex(Assets.BOTONMENU);
-        b3 = getTex(Assets.BOTONMENU);
-        b4 = getTex(Assets.BOTONMENU);
-        b5 = getTex(Assets.BOTONMENU);
+        btnTex = getTex(Assets.BOTONMENU);
 
         layoutButtons();
         installDefaultInput();
@@ -95,11 +90,11 @@ public class MenuScreen extends BaseScreen {
 
         drawMenuBackgroundIfEnabled(worldW, worldH);
 
-        btnPlay.drawTexture(batch, b1, uiLeft, uiBottom);
-        btnRecords.drawTexture(batch, b2, uiLeft, uiBottom);
-        btnOptions.drawTexture(batch, b3, uiLeft, uiBottom);
-        btnCredits.drawTexture(batch, b4, uiLeft, uiBottom);
-        btnHowTo.drawTexture(batch, b5, uiLeft, uiBottom);
+        btnPlay.drawTexture(batch, btnTex, uiLeft, uiBottom);
+        btnRecords.drawTexture(batch, btnTex, uiLeft, uiBottom);
+        btnOptions.drawTexture(batch, btnTex, uiLeft, uiBottom);
+        btnCredits.drawTexture(batch, btnTex, uiLeft, uiBottom);
+        btnHowTo.drawTexture(batch, btnTex, uiLeft, uiBottom);
 
         btnPlay.drawCenteredOutlinedText(batch, outlineFont, fillFont, layout,
             I18n.t("menu_play"), uiLeft, uiBottom, UI_SCALE, UI_OUTLINE_PX);
@@ -157,6 +152,6 @@ public class MenuScreen extends BaseScreen {
 
     @Override
     protected void onBack() {
-        // En menú principal no hacemos nada con back (para no salir sin querer).
+        // En menú principal no hacemos nada con back.
     }
 }
