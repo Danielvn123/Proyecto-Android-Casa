@@ -11,13 +11,17 @@ import com.dani.mijuego.game.world.Platform;
 
 public class GameLogic {
 
+    // Referencia a la pantalla de juego para modificar estado, jugador, cámara y sistemas
     final GameScreen s;
 
+    // Constructor: guarda referencia y reinicia el mundo al crear la lógica
     public GameLogic(GameScreen s) {
         this.s = s;
         resetWorld();
     }
 
+    // Reinicia toda la partida:
+    // resetea flags, score, sistemas, cámara, crea la primera plataforma y genera plataformas iniciales
     void resetWorld() {
 
         s.started = false;
@@ -56,6 +60,7 @@ public class GameLogic {
         s.goalCamFrozen = false;
         s.goalFrozenCamY = 0f;
 
+        // Coloca cámara al inicio y calcula el “suelo” visible (groundY)
         s.cam.position.set(GameConfig.VW / 2f, GameConfig.VH / 2f, 0);
         s.cam.update();
 
@@ -63,8 +68,10 @@ public class GameLogic {
         float bottomVisible = s.cam.position.y - worldH / 2f;
         s.groundY = bottomVisible;
 
+        // Resetea el decorado (ruinas) a partir del suelo
         s.ruins.reset(s.groundY);
 
+        // Crea la plataforma inicial centrada
         float firstPlatformX = (GameConfig.VW - GameConfig.PLATFORM_W) / 2f;
         float firstPlatformY = s.groundY + 90f;
 
@@ -75,6 +82,7 @@ public class GameLogic {
         first.dir = 1;
         s.platformSystem.platforms.add(first);
 
+        // Crea el jugador encima de la plataforma inicial
         s.player = new com.dani.mijuego.game.entities.Player(
             (GameConfig.VW - GameConfig.PLAYER_W) / 2f,
             firstPlatformY + GameConfig.PLATFORM_H,
@@ -83,6 +91,7 @@ public class GameLogic {
 
         s.maxY = s.player.rect.y;
 
+        // Genera un conjunto inicial de plataformas hacia arriba y spawnea objetos/enemigos
         float y = firstPlatformY;
 
         for (int i = 0; i < 10; i++) {
@@ -92,6 +101,7 @@ public class GameLogic {
             Platform p = s.platformSystem.makePlatform(x, y, true);
             s.platformSystem.platforms.add(p);
 
+            // Intenta spawnear pickups/enemigos varias veces si cae en una plataforma libre
             int tries = 2 + extraSpawnAttemptsForNivel();
             for (int t = 0; t < tries; t++) {
                 int enemiesBefore = s.enemySystem.enemies.size;
@@ -100,82 +110,114 @@ public class GameLogic {
                 if (s.hasAnyThingOnPlatform(p)) break;
             }
 
+            // Intenta spawnear powerups si la plataforma sigue libre
             spawnPowerupsOnPlatform(p);
         }
 
+        // Guarda el siguiente Y donde se seguirá generando en infinito
         s.platformSystem.nextY = y;
 
+        // Resetea cámara al centro inicial
         s.cam.position.set(GameConfig.VW / 2f, GameConfig.VH / 2f, 0);
         s.cam.update();
     }
 
+    // Update principal de la lógica del juego:
+    // gestiona victoria, movimiento, muerte, cámara, spawn infinito, colisiones y culling
     void update(float dt) {
 
+        // Si ya se alcanzó el objetivo, espera unos segundos y pasa a VictoryScreen
         if (s.goalReached) {
             s.goalTimer -= dt;
             if (s.goalTimer <= 0f) s.finishVictory();
             return;
         }
 
+        // Movimiento horizontal del jugador: bloqueado antes de empezar o durante muerte/victoria
         if (s.player != null) {
-            s.player.updateHorizontal(dt);
 
-            float w = s.player.rect.width;
-            float worldW = GameConfig.VW;
+            // Antes de empezar: no hay controles y se queda centrado
+            if (!s.started || s.dying || s.goalReached) {
+                s.player.rect.x = (GameConfig.VW - s.player.rect.width) / 2f;
 
-            if (s.player.rect.x + w < 0f) s.player.rect.x = worldW;
-            else if (s.player.rect.x > worldW) s.player.rect.x = -w;
+            } else {
+                // Después de empezar: controles normales
+                s.player.updateHorizontal(dt);
+
+                // Wrap horizontal: si sale por un lado, aparece por el otro
+                float w = s.player.rect.width;
+                float worldW = GameConfig.VW;
+
+                if (s.player.rect.x + w < 0f) s.player.rect.x = worldW;
+                else if (s.player.rect.x > worldW) s.player.rect.x = -w;
+            }
         }
 
+        // Si está muriendo, actualiza la caída/muerte y no ejecuta el resto de lógica normal
         if (s.dying) {
             updateDying(dt);
             return;
         }
 
+        // Tiempo total de la partida (solo cuando ya empezó)
         if (s.started) s.runTimeSec += dt;
 
+        // Actualiza plataformas móviles
         s.platformSystem.updateMoving(dt);
 
+        // Actualiza movimiento vertical del jugador y colisiones (solo si empezó)
         if (s.started && s.player != null) {
             updatePlayerVertical(dt);
         }
 
+        // Actualiza plataformas rompibles (fade / timers)
         s.platformSystem.updateBreakables(dt);
 
+        // Cuenta atrás del mensaje de cambio de nivel/vuelta (lap)
         if (s.levelUpMsgTime > 0f) {
             s.levelUpMsgTime -= dt;
             if (s.levelUpMsgTime < 0f) s.levelUpMsgTime = 0f;
         }
 
+        // Seguimiento de cámara al jugador (con opción de congelarla en final del modo niveles)
         updateCamera(dt);
 
+        // Actualiza decorado de ruinas según la parte baja visible
         float worldH = s.viewport.getWorldHeight();
         float bottomVisible = s.cam.position.y - worldH / 2f;
         s.ruins.update(dt, bottomVisible);
 
+        // Spawneo infinito de plataformas mientras la cámara sube
+        // En modo niveles, si ya se spawneó la meta, se deja de generar más
         boolean canSpawnMore = !(s.gameMode == com.dani.mijuego.game.GameMode.LEVELS && s.goalSpawned);
         if (canSpawnMore) {
             float topVisible = s.cam.position.y + worldH / 2f + 300f;
             while (s.platformSystem.nextY < topVisible) spawnPlatformAbove();
         }
 
+        // Línea de muerte por debajo de la pantalla
         float killY = bottomVisible - 200f;
 
+        // Actualiza efectos del jugador (duración de escudo, seta, botas, etc.)
         if (s.player != null) s.player.updateEffects(dt);
 
+        // Actualiza sistemas (recogibles/enemigos) y elimina lo que esté demasiado abajo
         s.coinSystem.update(s.player, killY, s.onCoinCollected);
         s.bootsSystem.update(s.player, killY, s.onBootsCollected);
         s.shieldSystem.update(s.player, killY, s.onShieldCollected);
         s.mushroomSystem.update(s.player, killY, s.onMushroomCollected);
         s.enemySystem.update(s.player, killY, s.onEnemyHit);
 
+        // Limpia plataformas muy por debajo del jugador para optimizar (culling)
         float keepBelow = 3f * GameConfig.STEP_Y + 250f;
         float cullY = s.player.rect.y - keepBelow;
         cullY = Math.min(cullY, bottomVisible - 200f);
         s.platformSystem.cullBelow(cullY);
 
+        // Limpia setas si su plataforma ya no existe
         cullMushroomsWithMissingPlatforms();
 
+        // Detecta colisión del jugador con la bandera de meta (modo niveles)
         if (s.gameMode == com.dani.mijuego.game.GameMode.LEVELS && s.goalSpawned && s.goalFlagRect != null && s.player != null && !s.goalReached) {
             if (s.player.rect.overlaps(s.goalFlagRect)) {
                 triggerGoalReached();
@@ -183,6 +225,7 @@ public class GameLogic {
             }
         }
 
+        // Muerte “dura” si el jugador cae demasiado por debajo del killY
         if (s.started && s.player != null && !s.dying) {
             if (s.player.rect.y < killY - s.HARD_DEATH_EXTRA) {
                 beginDying(s.HARD_DEATH_DURATION, false);
@@ -190,6 +233,8 @@ public class GameLogic {
         }
     }
 
+    // Actualiza la animación/estado de muerte:
+    // aplica gravedad (más fuerte si es caída al vacío), sigue al jugador con cámara y al final termina en GameOver
     private void updateDying(float dt) {
         if (s.player != null) {
             float g = GameConfig.GRAVITY;
@@ -200,6 +245,7 @@ public class GameLogic {
             s.player.rect.y += s.player.velY * dt;
         }
 
+        // La cámara sigue al jugador durante la caída
         s.cam.position.x = GameConfig.VW / 2f;
         if (s.player != null) {
             float targetY = s.player.rect.y + s.CAM_Y_OFFSET;
@@ -208,14 +254,18 @@ public class GameLogic {
         }
         s.cam.update();
 
+        // Cuenta atrás hasta finalizar la muerte (cambio a GameOver)
         s.dyingTimer -= dt;
         if (s.dyingTimer <= 0f) s.finishDying();
     }
 
+    // Controla la física vertical del jugador:
+    // gravedad, colisión con plataformas, detección de caída al vacío y gestión de niveles/laps según altura
     private void updatePlayerVertical(float dt) {
 
         float oldY = s.player.rect.y;
 
+        // Gravedad distinta si cae (fall multiplier + límite de velocidad)
         if (s.player.velY < 0f) {
             s.player.velY -= GameConfig.GRAVITY * s.FALL_MULT * dt;
             if (s.player.velY < -s.MAX_FALL_SPEED) s.player.velY = -s.MAX_FALL_SPEED;
@@ -223,10 +273,13 @@ public class GameLogic {
             s.player.velY -= GameConfig.GRAVITY * dt;
         }
 
+        // Aplica movimiento vertical
         s.player.rect.y += s.player.velY * dt;
 
+        // Comprueba colisión contra plataformas y aplica salto automático
         handlePlatformCollision(oldY);
 
+        // Si está cayendo y no hay plataforma debajo en un rango, activa “caída al vacío”
         boolean canTriggerVoidFall = (s.player.velY < 0f)
             && !s.dying
             && !s.goalReached
@@ -237,20 +290,25 @@ public class GameLogic {
             return;
         }
 
+        // Actualiza altura máxima y score en metros
         if (s.player.rect.y > s.maxY) {
             s.maxY = s.player.rect.y;
             s.score = (int) (s.maxY / 100f);
 
+            // En modo niveles: limita score al objetivo cuando ya existe la meta
             if (s.gameMode == com.dani.mijuego.game.GameMode.LEVELS && s.goalSpawned) {
                 if (s.score > s.MODE_TARGET_METERS) s.score = s.MODE_TARGET_METERS;
             }
         }
 
+        // Gestión de dificultad/visual según modo
         if (s.gameMode == com.dani.mijuego.game.GameMode.LEVELS) {
+            // Cuando llega al objetivo, spawnea plataforma final
             if (s.score >= s.MODE_TARGET_METERS && !s.goalSpawned) spawnGoalPlatform();
+            // Mientras no haya meta, va cambiando el nivel visual por metros
             if (!s.goalSpawned) applyLevelByMeters(s.score, true);
         } else {
-
+            // Modo infinito: usa “laps” (vueltas) cada X metros y reinicia el nivel visual
             int newLap = s.score / s.MODE_TARGET_METERS;
             if (newLap != s.lapIndex) {
                 s.lapIndex = newLap;
@@ -260,11 +318,15 @@ public class GameLogic {
                 s.setNivelVisual(0, false);
             }
 
+            // Dificultad dentro de la vuelta actual
             int lapMeters = s.score % s.MODE_TARGET_METERS;
             applyLevelByMeters(lapMeters, true);
         }
     }
 
+    // Cámara: sigue al jugador con suavizado (lerp/exponencial)
+    // y aplica un mínimo para que nunca baje del suelo
+    // en modo niveles puede congelarse al llegar al final para encuadrar la meta
     private void updateCamera(float dt) {
         if (s.player == null) return;
 
@@ -288,6 +350,8 @@ public class GameLogic {
         s.cam.update();
     }
 
+    // Inicia el proceso de muerte:
+    // marca flags, define duración, decide si es “void fall” y reproduce audio correspondiente
     private void beginDying(float duration, boolean isVoidFall) {
         if (s.dying) return;
 
@@ -305,6 +369,8 @@ public class GameLogic {
         }
     }
 
+    // Comprueba si existe alguna plataforma “válida” debajo del jugador dentro de un rango vertical
+    // se usa para detectar la caída al vacío
     private boolean hasPlatformBelowPlayer(float range) {
         if (s.player == null) return false;
 
@@ -323,6 +389,8 @@ public class GameLogic {
         return false;
     }
 
+    // Cambia el nivel visual/dificultad según metros:
+    // 0 -> 1 -> 2 -> 3 al superar 200/400/600
     private void applyLevelByMeters(int meters, boolean playSfx) {
         if (meters >= 600) s.setNivelVisual(3, playSfx);
         else if (meters >= 400) s.setNivelVisual(2, playSfx);
@@ -333,6 +401,8 @@ public class GameLogic {
     // ==========================
     // SPAWN
     // ==========================
+
+    // Genera una nueva plataforma por encima del límite actual y spawnea objetos/enemigos/powerups
     private void spawnPlatformAbove() {
         s.platformSystem.nextY += GameConfig.STEP_Y;
         float x = MathUtils.random(0f, GameConfig.VW - GameConfig.PLATFORM_W);
@@ -340,6 +410,7 @@ public class GameLogic {
         Platform p = s.platformSystem.makePlatform(x, s.platformSystem.nextY, true);
         s.platformSystem.platforms.add(p);
 
+        // Intenta generar pickups/enemigos varias veces (más intentos según nivel)
         int tries = 2 + extraSpawnAttemptsForNivel();
         for (int t = 0; t < tries; t++) {
             int enemiesBefore = s.enemySystem.enemies.size;
@@ -347,9 +418,12 @@ public class GameLogic {
             clampNewEnemiesToLevel(enemiesBefore);
         }
 
+        // Intenta generar powerups si queda libre
         spawnPowerupsOnPlatform(p);
     }
 
+    // Intenta spawnear power-ups en una plataforma si no hay nada encima:
+    // primero botas, luego escudo, luego seta (en orden de prioridad)
     private void spawnPowerupsOnPlatform(Platform p) {
         if (p == null) return;
         if (s.hasAnyThingOnPlatform(p)) return;
@@ -369,6 +443,9 @@ public class GameLogic {
     // ==========================
     // FINAL MODO NIVELES
     // ==========================
+
+    // Genera la plataforma final y la bandera en una posición visible de cámara:
+    // recorta plataformas superiores, congela la cámara y muestra mensaje de final
     private void spawnGoalPlatform() {
 
         s.goalSpawned = true;
@@ -392,19 +469,23 @@ public class GameLogic {
         s.platformSystem.platforms.add(p);
         s.goalPlatform = p;
 
+        // Crea el rectángulo de la bandera para detectar colisión con el jugador
         float fw = 120f;
         float fh = 160f;
         float fx = goalX + (GameConfig.PLATFORM_W - fw) / 2f;
         float fy = goalY + GameConfig.PLATFORM_H + 10f;
         s.goalFlagRect = new Rectangle(fx, fy, fw, fh);
 
+        // Ajusta nextY para que no sigan apareciendo plataformas por encima
         s.platformSystem.nextY = goalY;
 
+        // Elimina plataformas que queden por encima de la meta para dejar el final limpio
         for (int i = s.platformSystem.platforms.size - 1; i >= 0; i--) {
             Platform other = s.platformSystem.platforms.get(i);
             if (other != p && other.rect.y > goalY + 20f) s.platformSystem.platforms.removeIndex(i);
         }
 
+        // Congela cámara para encuadrar la zona final
         s.goalCamFrozen = true;
 
         float desiredCamTop = (goalY + GameConfig.PLATFORM_H) + s.GOAL_TOP_MARGIN;
@@ -413,11 +494,14 @@ public class GameLogic {
         s.cam.position.y = s.goalFrozenCamY;
         s.cam.update();
 
+        // Mensaje corto de final alcanzado
         s.levelUpMsgText = I18n.t("msg_reached_end");
         s.levelUpMsgTime = 1.5f;
         s.audio.playLevelUp();
     }
 
+    // Marca que se alcanzó la meta:
+    // activa un timer y reproduce sonido de victoria; luego se pasa a VictoryScreen
     private void triggerGoalReached() {
         if (s.goalReached) return;
         s.goalReached = true;
@@ -428,6 +512,7 @@ public class GameLogic {
         s.audio.playVictory();
     }
 
+    // Elimina setas que ya no tienen plataforma válida (porque fue eliminada del array)
     private void cullMushroomsWithMissingPlatforms() {
         for (int i = s.mushroomSystem.mushrooms.size - 1; i >= 0; i--) {
             Mushroom m = s.mushroomSystem.mushrooms.get(i);
@@ -437,6 +522,7 @@ public class GameLogic {
         }
     }
 
+    // Comprueba si una plataforma sigue existiendo en el array actual
     private boolean platformStillExists(Platform plat) {
         for (int i = 0; i < s.platformSystem.platforms.size; i++) {
             if (s.platformSystem.platforms.get(i) == plat) return true;
@@ -447,6 +533,9 @@ public class GameLogic {
     // ==========================
     // Colisión plataformas
     // ==========================
+
+    // Detecta colisión del jugador con la parte superior de plataformas al caer:
+    // usa “pies” estrechos, detecta cruce de la parte superior y aplica salto automático
     private void handlePlatformCollision(float oldY) {
         if (s.player == null) return;
         if (s.player.velY >= 0) return;
@@ -465,6 +554,7 @@ public class GameLogic {
         Platform best = null;
         float bestTop = -Float.MAX_VALUE;
 
+        // Busca la mejor plataforma candidata (la más alta que se haya cruzado)
         for (int i = 0; i < s.platformSystem.platforms.size; i++) {
             Platform p = s.platformSystem.platforms.get(i);
             if (p == null || p.broken) continue;
@@ -485,12 +575,14 @@ public class GameLogic {
 
         if (best == null) return;
 
+        // Coloca al jugador justo encima de la plataforma y ejecuta salto automático
         s.player.rect.y = bestTop;
 
         float jump = GameConfig.JUMP_VEL;
 
         boolean usedBoots = false;
 
+        // Si tiene botas, aumenta el salto y consume un salto de botas
         if (s.player.consumeBootsJump()) {
             jump *= s.BOOTS_MULT;
             usedBoots = true;
@@ -498,9 +590,11 @@ public class GameLogic {
 
         s.player.velY = jump;
 
+        // Sonidos diferentes si salta con botas o normal
         if (usedBoots) s.audio.playTenis();
         else s.audio.playJump();
 
+        // Si la plataforma es rompible, se marca como rota para que desaparezca luego
         if (best.breakable) {
             best.broken = true;
             best.brokenTime = 0f;
@@ -510,6 +604,9 @@ public class GameLogic {
     // ==========================
     // Enemigos por nivel
     // ==========================
+
+    // Devuelve un tipo de enemigo permitido según el nivel visual actual
+    // (al principio solo lila, luego se van habilitando más colores/tipos)
     private EnemyType randomAllowedTypeForCurrentLevel() {
         if (s.nivelVisual == 0) return EnemyType.LILA;
 
@@ -531,6 +628,8 @@ public class GameLogic {
         return EnemyType.ROJO;
     }
 
+    // Ajusta el tipo de los enemigos recién creados para que respeten el nivel actual
+    // (se usa después del spawner para “capar” enemigos que no toquen aún)
     private void clampNewEnemiesToLevel(int startIndex) {
         for (int i = startIndex; i < s.enemySystem.enemies.size; i++) {
             Enemy e = s.enemySystem.enemies.get(i);
@@ -539,6 +638,8 @@ public class GameLogic {
         }
     }
 
+    // Devuelve intentos extra de spawn según nivel visual:
+    // a mayor nivel, más intentos de generar cosas en plataformas nuevas
     private int extraSpawnAttemptsForNivel() {
         switch (s.nivelVisual) {
             case 0: return 1;

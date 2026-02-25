@@ -14,24 +14,33 @@ import com.dani.mijuego.util.UiButton;
 
 public class PauseScreen extends BaseScreen {
 
+    // Textura base para dibujar los botones
     private Texture btnTex;
 
+    // Botones del menú de pausa
     private final UiButton btnContinue = new UiButton(0, 0, 1, 1);
     private final UiButton btnRestart  = new UiButton(0, 0, 1, 1);
     private final UiButton btnExit     = new UiButton(0, 0, 1, 1);
 
+    // Referencia a la GameScreen que se estaba jugando (para volver al continuar)
     private final GameScreen gameScreen;
+
+    // Sistema de audio usado para reproducir el sonido de selección
     private final GameAudio audio;
 
+    // Constructor: recibe el juego, la pantalla de juego actual y el audio
     public PauseScreen(Main game, GameScreen gameScreen, GameAudio audio) {
         super(game, GameConfig.VW, GameConfig.VH);
         this.gameScreen = gameScreen;
         this.audio = audio;
     }
 
+    // Indica que esta pantalla usa el fondo tipo menú
     @Override
     protected boolean useMenuBackground() { return true; }
 
+    // Se ejecuta al entrar en la pantalla:
+    // carga textura de botones, captura tecla BACK y prepara UI e input
     @Override
     public void show() {
         super.show();
@@ -44,16 +53,19 @@ public class PauseScreen extends BaseScreen {
         installDefaultInput();
     }
 
+    // Reproduce el sonido de click (usa audio recibido o el del juego si existe)
     private void sfxClick() {
         if (audio != null) audio.playSelectButton();
         else if (game != null && game.audio != null) game.audio.playSelectButton();
     }
 
+    // Cuando cambia el tamaño, recalcula la posición de los botones
     @Override
     protected void onResize() {
         layoutButtons();
     }
 
+    // Posiciona los 3 botones centrados vertical y horizontalmente
     private void layoutButtons() {
         float w = viewport.getWorldWidth();
         float h = viewport.getWorldHeight();
@@ -72,6 +84,8 @@ public class PauseScreen extends BaseScreen {
         btnExit.set(x, startY - 2f * (btnH + gap), btnW, btnH);
     }
 
+    // Render principal del PauseScreen:
+    // dibuja fondo, botones y textos internacionalizados
     @Override
     public void render(float delta) {
         ScreenUtils.clear(0f, 0f, 0f, 1f);
@@ -86,6 +100,7 @@ public class PauseScreen extends BaseScreen {
         float uiLeft = cam.position.x - worldW / 2f;
         float uiBottom = cam.position.y - worldH / 2f;
 
+        // Actualiza estado hover/animación de botones usando coordenadas HUD
         Vector3 hud = unprojectToHud(Gdx.input.getX(), Gdx.input.getY());
         btnContinue.update(hud.x, hud.y, delta);
         btnRestart.update(hud.x, hud.y, delta);
@@ -93,12 +108,15 @@ public class PauseScreen extends BaseScreen {
 
         batch.begin();
 
+        // Fondo de menú
         drawMenuBackgroundIfEnabled(worldW, worldH);
 
+        // Dibuja textura base de cada botón
         btnContinue.drawTexture(batch, btnTex, uiLeft, uiBottom);
         btnRestart.drawTexture(batch, btnTex, uiLeft, uiBottom);
         btnExit.drawTexture(batch, btnTex, uiLeft, uiBottom);
 
+        // Dibuja textos centrados (traducciones con I18n)
         btnContinue.drawCenteredOutlinedText(batch, outlineFont, fillFont, layout,
             I18n.t("pause_continue"), uiLeft, uiBottom, UI_SCALE, UI_OUTLINE_PX);
 
@@ -111,6 +129,10 @@ public class PauseScreen extends BaseScreen {
         batch.end();
     }
 
+    // Gestiona los toques en HUD:
+    // - Continuar: vuelve a la GameScreen existente
+    // - Reiniciar: crea una nueva GameScreen y empieza desde cero
+    // - Salir: vuelve al menú principal
     @Override
     protected boolean onTouchDownHud(float xHud, float yHud) {
 
@@ -135,6 +157,7 @@ public class PauseScreen extends BaseScreen {
         return false;
     }
 
+    // Acción al pulsar BACK: equivale a continuar (volver al juego)
     @Override
     protected void onBack() {
         sfxClick();

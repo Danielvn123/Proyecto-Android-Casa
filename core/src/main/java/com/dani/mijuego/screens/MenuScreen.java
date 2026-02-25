@@ -12,21 +12,27 @@ import com.dani.mijuego.util.UiButton;
 
 public class MenuScreen extends BaseScreen {
 
+    // Textura que se usa como imagen base de todos los botones
     private Texture btnTex;
 
+    // Botones del menú principal
     private final UiButton btnPlay    = new UiButton(0, 0, 1, 1);
     private final UiButton btnRecords = new UiButton(0, 0, 1, 1);
     private final UiButton btnOptions = new UiButton(0, 0, 1, 1);
     private final UiButton btnCredits = new UiButton(0, 0, 1, 1);
     private final UiButton btnHowTo   = new UiButton(0, 0, 1, 1);
 
+    // Constructor del menú principal
     public MenuScreen(Main game) {
         super(game, GameConfig.VW, GameConfig.VH);
     }
 
+    // Indica que esta pantalla usa el fondo tipo menú
     @Override
     protected boolean useMenuBackground() { return true; }
 
+    // Se ejecuta cuando la pantalla se muestra.
+    // Carga la textura de botones, organiza posiciones e instala el input.
     @Override
     public void show() {
         super.show();
@@ -37,15 +43,19 @@ public class MenuScreen extends BaseScreen {
         installDefaultInput();
     }
 
+    // Reproduce el sonido de selección de botón
     private void click() {
         if (game != null && game.audio != null) game.audio.playSelectButton();
     }
 
+    // Se ejecuta cuando cambia el tamaño de pantalla.
+    // Recalcula la posición de los botones.
     @Override
     protected void onResize() {
         layoutButtons();
     }
 
+    // Calcula y posiciona todos los botones centrados vertical y horizontalmente.
     private void layoutButtons() {
         float w = viewport.getWorldWidth();
         float h = viewport.getWorldHeight();
@@ -65,6 +75,8 @@ public class MenuScreen extends BaseScreen {
         btnHowTo.set(x, startY - 4f * (btnH + gap), btnW, btnH);
     }
 
+    // Render principal del menú.
+    // Dibuja fondo, botones y textos centrados.
     @Override
     public void render(float delta) {
         ScreenUtils.clear(0f, 0f, 0f, 1f);
@@ -79,7 +91,10 @@ public class MenuScreen extends BaseScreen {
         float uiLeft = cam.position.x - worldW / 2f;
         float uiBottom = cam.position.y - worldH / 2f;
 
+        // Obtiene la posición actual del ratón/toque en coordenadas HUD
         Vector3 hud = unprojectToHud(Gdx.input.getX(), Gdx.input.getY());
+
+        // Actualiza estado hover/animaciones de los botones
         btnPlay.update(hud.x, hud.y, delta);
         btnRecords.update(hud.x, hud.y, delta);
         btnOptions.update(hud.x, hud.y, delta);
@@ -88,14 +103,17 @@ public class MenuScreen extends BaseScreen {
 
         batch.begin();
 
+        // Dibuja el fondo del menú
         drawMenuBackgroundIfEnabled(worldW, worldH);
 
+        // Dibuja textura base de cada botón
         btnPlay.drawTexture(batch, btnTex, uiLeft, uiBottom);
         btnRecords.drawTexture(batch, btnTex, uiLeft, uiBottom);
         btnOptions.drawTexture(batch, btnTex, uiLeft, uiBottom);
         btnCredits.drawTexture(batch, btnTex, uiLeft, uiBottom);
         btnHowTo.drawTexture(batch, btnTex, uiLeft, uiBottom);
 
+        // Dibuja el texto centrado dentro de cada botón usando I18n
         btnPlay.drawCenteredOutlinedText(batch, outlineFont, fillFont, layout,
             I18n.t("menu_play"), uiLeft, uiBottom, UI_SCALE, UI_OUTLINE_PX);
 
@@ -114,6 +132,7 @@ public class MenuScreen extends BaseScreen {
         batch.end();
     }
 
+    // Detecta qué botón ha sido pulsado y cambia de pantalla según corresponda.
     @Override
     protected boolean onTouchDownHud(float xHud, float yHud) {
 
@@ -150,6 +169,7 @@ public class MenuScreen extends BaseScreen {
         return false;
     }
 
+    // En el menú principal no se hace nada al pulsar atrás.
     @Override
     protected void onBack() {
         // En menú principal no hacemos nada con back.

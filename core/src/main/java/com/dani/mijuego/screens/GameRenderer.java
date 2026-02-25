@@ -16,12 +16,16 @@ import com.dani.mijuego.util.FontUtils;
 
 public class GameRenderer {
 
+    // Referencia al GameScreen para acceder a cámara, batch, sistemas y texturas
     final GameScreen s;
 
+    // Constructor: guarda la referencia a la pantalla de juego
     public GameRenderer(GameScreen s) {
         this.s = s;
     }
 
+    // Método principal de dibujo: pinta el juego por capas en un orden concreto
+    // (fondo -> decorado -> plataformas -> objetos -> enemigos -> jugador -> UI)
     public void draw(float worldW, float worldH) {
 
         drawBackground(worldW, worldH);
@@ -35,6 +39,7 @@ public class GameRenderer {
         drawHud(worldW, worldH);
     }
 
+    // Dibuja el fondo actual del nivel y, si están habilitadas, capas parallax de nubes/estrellas
     private void drawBackground(float worldW, float worldH) {
 
         s.drawFullScreen(s.fondoActual, worldW, worldH);
@@ -52,6 +57,8 @@ public class GameRenderer {
         }
     }
 
+    // Dibuja el decorado de ruinas en la parte baja de la pantalla con transparencia (alpha)
+    // y con posición calculada según el fondo visible
     private void drawRuins(float worldW, float worldH) {
         if (s.ruins.disabled || s.ruinasTex == null) return;
 
@@ -72,6 +79,9 @@ public class GameRenderer {
         s.batch.setColor(1f, 1f, 1f, oldA);
     }
 
+    // Dibuja todas las plataformas:
+    // - Si no están rotas, dibuja la textura normal
+    // - Si están rotas, según nivel visual puede desaparecer o dibujar la textura rota con fade
     private void drawPlatforms() {
         for (int i = 0; i < s.platformSystem.platforms.size; i++) {
             Platform p = s.platformSystem.platforms.get(i);
@@ -93,12 +103,15 @@ public class GameRenderer {
         }
     }
 
+    // Devuelve la textura rota a usar según el nivel visual
     private Texture brokenPlatformTex() {
         if (s.nivelVisual == 1) return s.plataformaMediaRotaTex;
         if (s.nivelVisual == 3) return s.plataformaColoresRotaTex;
         return s.plataformaRotaTex;
     }
 
+    // Dibuja una plataforma rota con efecto de fade-out:
+    // usa brokenTime para reducir alpha hasta que desaparece
     private void drawBrokenPlatform(Texture brokenTex, Platform p) {
         float t = MathUtils.clamp(p.brokenTime / com.dani.mijuego.game.GameConfig.BROKEN_FADE_TIME, 0f, 1f);
         float a = 1f - t;
@@ -115,11 +128,14 @@ public class GameRenderer {
         s.batch.setColor(1f, 1f, 1f, oldA);
     }
 
+    // Dibuja la bandera objetivo si existe (modo niveles)
     private void drawGoalFlag() {
         if (s.banderaTex == null || s.goalFlagRect == null) return;
         s.batch.draw(s.banderaTex, s.goalFlagRect.x, s.goalFlagRect.y, s.goalFlagRect.width, s.goalFlagRect.height);
     }
 
+    // Dibuja todos los objetos recogibles (monedas, botas, escudos, setas)
+    // usando los sistemas correspondientes (CoinSystem, BootsSystem, etc.)
     private void drawPickups() {
 
         if (s.monedaTex != null) {
@@ -151,6 +167,7 @@ public class GameRenderer {
         }
     }
 
+    // Dibuja enemigos del EnemySystem, aplicando escala según el tipo de enemigo
     private void drawEnemies() {
         for (int i = 0; i < s.enemySystem.enemies.size; i++) {
             Enemy e = s.enemySystem.enemies.get(i);
@@ -169,6 +186,8 @@ public class GameRenderer {
         }
     }
 
+    // Dibuja el jugador, eligiendo la textura final según estado:
+    // normal / con escudo / con seta, y según dirección (izq/der/idle)
     private void drawPlayer() {
         if (s.player == null) return;
 
@@ -190,6 +209,7 @@ public class GameRenderer {
         }
     }
 
+    // Dibuja el botón de pausa en coordenadas de interfaz (HUD)
     private void drawPauseButton(float worldW, float worldH) {
         if (s.btnPauseTex == null || s.btnPause == null) return;
 
@@ -205,14 +225,18 @@ public class GameRenderer {
         );
     }
 
+    // Dibuja el HUD: monedas, iconos de power-ups activos, altura actual,
+    // mensajes temporales (level up, objetivo) y el “pulsa para empezar”
     private void drawHud(float worldW, float worldH) {
         float uiLeft = s.cam.position.x - worldW / 2f;
         float uiBottom = s.cam.position.y - worldH / 2f;
 
+        // Bloque de monedas + iconos de powerups a la derecha del HUD
         if (s.monedaTex != null && s.btnPause != null) {
             float coinSize = 100f;
             float coinY = uiBottom + s.btnPause.y + (s.btnPause.height - coinSize) / 2f;
 
+            // Dibuja el texto "x N" y calcula el ancho del bloque para alinear a la derecha
             s.font.getData().setScale(4f);
             String txt = "x " + s.coinSystem.collected;
             s.layout.setText(s.font, txt);
@@ -227,8 +251,10 @@ public class GameRenderer {
 
             float textY = coinY + coinSize * 0.70f;
 
+            // Dibuja moneda y contador
             s.batch.draw(s.monedaTex, coinX, coinY, coinSize, coinSize);
 
+            // Decide qué iconos mostrar según el estado del jugador
             boolean showBoots  = (s.player != null && s.player.getBootsJumpsLeft() > 0);
             boolean showShield = (s.player != null && s.player.isShieldActive());
             boolean showSeta   = (s.player != null && s.player.isSetaActive());
@@ -238,6 +264,7 @@ public class GameRenderer {
             if (showBoots && s.bootsTex != null) count++;
             if (showSeta && s.setaTex != null) count++;
 
+            // Si hay power-ups activos, dibuja iconos a la izquierda del bloque de monedas
             if (count > 0) {
                 float totalIconsW = count * s.POWER_ICON_SIZE + (count - 1) * s.POWER_ICON_GAP;
                 float startX = coinX - 18f - totalIconsW;
@@ -260,11 +287,13 @@ public class GameRenderer {
                 }
             }
 
+            // Dibuja el texto del contador de monedas y restaura escala
             s.font.setColor(1f, 1f, 1f, 1f);
             s.font.draw(s.batch, s.layout, textX, textY);
             s.font.getData().setScale(1f);
         }
 
+        // Bloque de altura/puntuación en la esquina superior izquierda
         float margin = 70f;
         float textX = uiLeft + margin;
         float textY = uiBottom + worldH - margin;
@@ -277,6 +306,7 @@ public class GameRenderer {
         s.font.draw(s.batch, s.layout, textX, textY);
         s.font.getData().setScale(1f);
 
+        // Mensaje temporal de subida de nivel (aparece y se desvanece con alpha)
         if (s.levelUpMsgTime > 0f && s.levelUpMsgText != null) {
             float t = s.levelUpMsgTime / s.LEVEL_UP_MSG_DURATION;
             float alpha = MathUtils.clamp(t, 0f, 1f);
@@ -303,6 +333,7 @@ public class GameRenderer {
             s.startFillFont.setColor(Color.WHITE);
         }
 
+        // Mensaje de objetivo alcanzado (modo niveles) centrado en pantalla
         if (s.goalReached && s.goalMsg != null) {
             float cx = s.cam.position.x;
             float cy = s.cam.position.y + 140f;
@@ -324,6 +355,7 @@ public class GameRenderer {
             s.startFillFont.setColor(Color.WHITE);
         }
 
+        // Mensaje inicial “pulsa/toca para empezar” cuando aún no se ha iniciado la partida
         if (!s.started) {
             s.startAnimTime += com.badlogic.gdx.Gdx.graphics.getDeltaTime();
 

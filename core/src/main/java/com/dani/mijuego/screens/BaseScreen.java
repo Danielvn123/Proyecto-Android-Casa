@@ -34,22 +34,22 @@ public abstract class BaseScreen extends ScreenAdapter {
 
     private final Vector3 tmp = new Vector3();
 
-    // MENU CHROME (fondo + hint abajo)
     private Texture menuBgTex = null;
 
-    protected static final float BACK_HINT_ZONE_H = 220f; // zona inferior tocable
-    protected static final float BACK_HINT_Y = 120f;      // altura del texto
+    protected static final float BACK_HINT_ZONE_H = 220f;
+    protected static final float BACK_HINT_Y = 120f;
 
-    // Estilo global texto
     protected static final float TITLE_SCALE = 3.0f;
     protected static final float TITLE_OUTLINE_PX = 3.5f;
 
-    protected static final float UI_SCALE = 2.4f;
+    protected static final float UI_SCALE = 3.5f;
     protected static final float UI_OUTLINE_PX = 3.0f;
 
     protected static final float BACK_HINT_SCALE = 2.2f;
     protected static final float BACK_HINT_OUTLINE_PX = 3.0f;
 
+    // Constructor base de todas las pantallas.
+    // Inicializa el SpriteBatch, la cámara, el Viewport y las fuentes.
     protected BaseScreen(Main game, float vw, float vh) {
         this.game = game;
 
@@ -74,19 +74,25 @@ public abstract class BaseScreen extends ScreenAdapter {
         applyDefaultTextStyle();
     }
 
+    // Se ejecuta cuando cambia el tamaño de la ventana o la orientación.
+    // Actualiza el viewport y permite recalcular posiciones.
     @Override
     public void resize(int width, int height) {
         viewport.update(width, height, true);
         onResize();
     }
 
+    // Hook opcional para que las pantallas hijas ajusten elementos al redimensionar.
     protected void onResize() {}
 
-    // Activadores (override en screens)
+    // Indica si esta pantalla debe usar el fondo de menú.
     protected boolean useMenuBackground() { return false; }
+
+    // Indica si esta pantalla debe mostrar el texto inferior para volver atrás.
     protected boolean useBottomBackHint() { return false; }
 
-    // HUD unproject
+    // Convierte coordenadas de pantalla (pixels) a coordenadas del HUD.
+    // Se usa para detectar correctamente toques en botones.
     protected Vector3 unprojectToHud(int screenX, int screenY) {
         tmp.set(screenX, screenY, 0f);
         viewport.unproject(tmp);
@@ -103,7 +109,7 @@ public abstract class BaseScreen extends ScreenAdapter {
         return tmp;
     }
 
-    // Assets helper (Quita safeGetTex repetido)
+    // Obtiene una textura del AssetManager con control de errores.
     protected Texture getTex(String assetPath) {
         try {
             return game.assets.manager.get(assetPath, Texture.class);
@@ -113,25 +119,27 @@ public abstract class BaseScreen extends ScreenAdapter {
         }
     }
 
-    // Estilo global: blanco/negro
+    // Aplica el estilo base de texto (relleno blanco y contorno negro).
     protected void applyDefaultTextStyle() {
         if (batch != null) batch.setColor(1f, 1f, 1f, 1f);
         if (fillFont != null) fillFont.setColor(1f, 1f, 1f, 1f);
         if (outlineFont != null) outlineFont.setColor(0f, 0f, 0f, 1f);
     }
 
+    // Restablece la escala de las fuentes a su valor original.
     protected void resetFontScale() {
         if (fillFont != null) fillFont.getData().setScale(1f);
         if (outlineFont != null) outlineFont.getData().setScale(1f);
         if (font != null) font.getData().setScale(1f);
     }
 
+    // Dibuja texto con borde usando FontUtils.
     protected void drawOutlined(String text, float x, float y, float outlinePx) {
         applyDefaultTextStyle();
         FontUtils.drawOutlined(batch, outlineFont, fillFont, text, x, y, outlinePx);
     }
 
-    // NUEVO: título centrado reutilizable
+    // Dibuja un título centrado horizontalmente en la pantalla.
     protected void drawCenteredTitle(String text, float yWorld) {
         if (text == null) text = "";
         applyDefaultTextStyle();
@@ -147,7 +155,7 @@ public abstract class BaseScreen extends ScreenAdapter {
         resetFontScale();
     }
 
-    // NUEVO: multiline centrado reutilizable
+    // Dibuja texto multilínea centrado.
     protected void drawCenteredMultiline(String text,
                                          float startY,
                                          float lineSpacing,
@@ -173,7 +181,7 @@ public abstract class BaseScreen extends ScreenAdapter {
         resetFontScale();
     }
 
-    // Fondo tipo menú
+    // Devuelve la textura del fondo del menú (la carga si aún no está cargada).
     protected Texture getMenuBackground() {
         if (menuBgTex != null) return menuBgTex;
 
@@ -190,6 +198,7 @@ public abstract class BaseScreen extends ScreenAdapter {
         return menuBgTex;
     }
 
+    // Dibuja el fondo de menú si está activado.
     protected void drawMenuBackgroundIfEnabled(float worldW, float worldH) {
         if (!useMenuBackground()) return;
 
@@ -203,7 +212,7 @@ public abstract class BaseScreen extends ScreenAdapter {
         batch.draw(bg, uiLeft, uiBottom, worldW, worldH);
     }
 
-    // Hint abajo + tap para volver
+    // Dibuja el texto inferior para volver atrás si está activado.
     protected void drawBottomBackHintIfEnabled(float worldW, float worldH) {
         if (!useBottomBackHint()) return;
 
@@ -227,6 +236,7 @@ public abstract class BaseScreen extends ScreenAdapter {
         resetFontScale();
     }
 
+    // Detecta si el usuario ha tocado la zona inferior para volver atrás.
     protected boolean handleBottomBackTap(float xHud, float yHud) {
         if (!useBottomBackHint()) return false;
         if (yHud <= BACK_HINT_ZONE_H) {
@@ -236,20 +246,21 @@ public abstract class BaseScreen extends ScreenAdapter {
         return false;
     }
 
-    // Helpers (compat)
+    // Configura el estilo de texto para títulos.
     protected void setTitleStyle() {
         applyDefaultTextStyle();
         fillFont.getData().setScale(TITLE_SCALE);
         outlineFont.getData().setScale(TITLE_SCALE);
     }
 
+    // Configura el estilo de texto para elementos de interfaz.
     protected void setUiStyle() {
         applyDefaultTextStyle();
         fillFont.getData().setScale(UI_SCALE);
         outlineFont.getData().setScale(UI_SCALE);
     }
 
-    // Input por defecto
+    // Instala el sistema de entrada por defecto (tecla atrás y toques).
     protected void installDefaultInput() {
         Gdx.input.setInputProcessor(new InputAdapter() {
 
@@ -273,13 +284,15 @@ public abstract class BaseScreen extends ScreenAdapter {
         });
     }
 
-    // Hooks
+    // Método que se ejecuta al pulsar atrás (lo implementan las pantallas hijas).
     protected void onBack() {}
 
+    // Método que se ejecuta al tocar la pantalla en coordenadas HUD.
     protected boolean onTouchDownHud(float xHud, float yHud) {
         return false;
     }
 
+    // Libera los recursos gráficos cuando la pantalla se destruye.
     @Override
     public void dispose() {
         if (batch != null) batch.dispose();

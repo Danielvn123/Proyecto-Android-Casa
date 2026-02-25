@@ -15,32 +15,41 @@ import com.dani.mijuego.util.UiButton;
 
 public class OptionsScreen extends BaseScreen {
 
+    // Pantalla a la que se vuelve al pulsar atrás (si es null, vuelve al menú)
     private final Screen backScreen;
 
+    // Texturas para representar estados ON/OFF y el botón base del menú
     private Texture texOn;
     private Texture texOff;
     private Texture texMenuBtn;
 
+    // Botones de opciones (idioma, música, vibración, borrar récords)
     private final UiButton btnLang  = new UiButton(0, 0, 1, 1);
     private final UiButton btnMusic = new UiButton(0, 0, 1, 1);
     private final UiButton btnVibra = new UiButton(0, 0, 1, 1);
     private final UiButton btnClear = new UiButton(0, 0, 1, 1);
 
+    // Constructor rápido: si no se indica pantalla previa, se vuelve al menú
     public OptionsScreen(Main game) {
         this(game, null);
     }
 
+    // Constructor principal: inicializa la pantalla y guarda a dónde volver
     public OptionsScreen(Main game, Screen backScreen) {
         super(game, GameConfig.VW, GameConfig.VH);
         this.backScreen = backScreen;
     }
 
+    // Indica que esta pantalla usa el fondo tipo menú
     @Override
     protected boolean useMenuBackground() { return true; }
 
+    // Indica que debe mostrarse el hint inferior para volver atrás
     @Override
     protected boolean useBottomBackHint() { return true; }
 
+    // Se ejecuta al entrar en la pantalla:
+    // carga texturas, aplica ajustes guardados (música), configura BACK y coloca UI
     @Override
     public void show() {
         super.show();
@@ -60,15 +69,18 @@ public class OptionsScreen extends BaseScreen {
         installDefaultInput();
     }
 
+    // Sonido de click al pulsar botones
     private void click() {
         if (game != null && game.audio != null) game.audio.playSelectButton();
     }
 
+    // Cuando cambia el tamaño, recalcula posiciones de la UI
     @Override
     protected void onResize() {
         layoutUi();
     }
 
+    // Calcula y posiciona los botones centrados y separados verticalmente
     private void layoutUi() {
         float w = viewport.getWorldWidth();
         float h = viewport.getWorldHeight();
@@ -86,6 +98,8 @@ public class OptionsScreen extends BaseScreen {
         btnClear.set(x, startY - 3f * (btnH + gap), btnW, btnH);
     }
 
+    // Render principal: dibuja fondo, título, toggles (idioma/música/vibración),
+    // botón de borrar récords y el hint inferior de volver
     @Override
     public void render(float delta) {
         ScreenUtils.clear(0f, 0f, 0f, 1f);
@@ -100,6 +114,7 @@ public class OptionsScreen extends BaseScreen {
         float uiLeft = cam.position.x - worldW / 2f;
         float uiBottom = cam.position.y - worldH / 2f;
 
+        // Actualiza animación/hover de botones según posición del ratón/toque
         Vector3 hud = unprojectToHud(Gdx.input.getX(), Gdx.input.getY());
         btnLang.update(hud.x, hud.y, delta);
         btnMusic.update(hud.x, hud.y, delta);
@@ -113,7 +128,7 @@ public class OptionsScreen extends BaseScreen {
         // Título
         drawCenteredTitle(I18n.t("menu_options"), uiBottom + worldH * 0.90f);
 
-        // Toggles
+        // Toggle idioma (muestra si está EN y los textos EN/ES)
         drawToggle(btnLang,
             I18n.t("opt_language"),
             I18n.getLang() == I18n.Lang.EN,
@@ -121,6 +136,7 @@ public class OptionsScreen extends BaseScreen {
             I18n.t("opt_language_value_es"),
             uiLeft, uiBottom);
 
+        // Toggle música (ON/OFF persistente en GameSave)
         drawToggle(btnMusic,
             I18n.t("opt_music"),
             GameSave.isMusicOn(),
@@ -128,6 +144,7 @@ public class OptionsScreen extends BaseScreen {
             I18n.t("opt_off"),
             uiLeft, uiBottom);
 
+        // Toggle vibración (ON/OFF persistente en GameSave)
         drawToggle(btnVibra,
             I18n.t("opt_vibration"),
             GameSave.isVibrationOn(),
@@ -135,6 +152,7 @@ public class OptionsScreen extends BaseScreen {
             I18n.t("opt_off"),
             uiLeft, uiBottom);
 
+        // Botón de acción: borrar historial de récords
         drawActionButton(btnClear, I18n.t("opt_clear_records"), uiLeft, uiBottom);
 
         drawBottomBackHintIfEnabled(worldW, worldH);
@@ -142,6 +160,10 @@ public class OptionsScreen extends BaseScreen {
         batch.end();
     }
 
+    // Dibuja una opción tipo "toggle":
+    // - Texto etiqueta a la izquierda
+    // - Imagen ON/OFF a la derecha
+    // - Texto dentro del switch (por ejemplo ON/OFF o EN/ES)
     private void drawToggle(UiButton btn,
                             String label,
                             boolean isOn,
@@ -184,6 +206,7 @@ public class OptionsScreen extends BaseScreen {
         resetFontScale();
     }
 
+    // Dibuja un botón normal de acción (sin toggle), centrando textura y texto
     private void drawActionButton(UiButton btn, String label, float uiLeft, float uiBottom) {
         float centerY = uiBottom + btn.bounds.y + btn.bounds.height / 2f;
 
@@ -206,6 +229,11 @@ public class OptionsScreen extends BaseScreen {
         resetFontScale();
     }
 
+    // Gestiona los toques en los botones:
+    // - Idioma: alterna EN/ES y guarda en GameSave
+    // - Música: activa/desactiva y aplica al sistema de audio
+    // - Vibración: alterna y guarda preferencia
+    // - Borrar récords: limpia historial guardado
     @Override
     protected boolean onTouchDownHud(float xHud, float yHud) {
 
@@ -242,6 +270,7 @@ public class OptionsScreen extends BaseScreen {
         return false;
     }
 
+    // Acción al pulsar atrás: vuelve a la pantalla anterior si existe, o al menú
     @Override
     protected void onBack() {
         click();

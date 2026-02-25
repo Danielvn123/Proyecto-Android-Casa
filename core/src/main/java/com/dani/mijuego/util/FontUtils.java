@@ -3,10 +3,10 @@ package com.dani.mijuego.util;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
-// Clase utilitaria para dibujar texto con borde (outline)
+// Clase utilitaria para dibujar texto con borde
 public final class FontUtils {
 
-    // Constructor privado para evitar que se instancie (solo métodos estáticos)
+    // Constructor privado para evitar que se instancie
     private FontUtils() {}
 
     public static void drawOutlined(SpriteBatch batch, BitmapFont outline, BitmapFont fill,

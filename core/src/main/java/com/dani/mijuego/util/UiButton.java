@@ -9,10 +9,9 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 
-/**
- * Botón UI simple: bounds en coordenadas HUD (0..worldW/0..worldH),
- * hover (solo desktop) + escala suave, dibujado de textura y texto centrado.
- */
+//Botón UI simple: bounds en coordenadas HUD (0..worldW/0..worldH),
+//hover (solo desktop) + escala suave, dibujado de textura y texto centrado.
+
 public class UiButton {
 
     // Área del botón en coordenadas HUD (se usa para click/hover y para dibujar)

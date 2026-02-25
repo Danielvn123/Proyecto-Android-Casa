@@ -34,21 +34,23 @@ public class HowToPlayScreen extends BaseScreen {
     @Override
     protected boolean useBottomBackHint() { return true; }
 
-    // Se ejecuta al entrar en la pantalla
+    // Se ejecuta al entrar en la pantalla.
+    // Instala el sistema de entrada por defecto.
     @Override
     public void show() {
         super.show();
-        // Instala el input por defecto (gestión de atrás y toques)
         installDefaultInput();
     }
 
-    // Render principal de la pantalla
+    // Render principal de la pantalla.
+    // Dibuja fondo, título, instrucciones y texto inferior para volver.
     @Override
     public void render(float delta) {
-        // Limpia la pantalla a negro
+
+        // Limpia la pantalla
         ScreenUtils.clear(0f, 0f, 0f, 1f);
 
-        // Aplica el viewport y actualiza cámara
+        // Aplica viewport y actualiza cámara
         viewport.apply(true);
         cam.update();
         batch.setProjectionMatrix(cam.combined);
@@ -62,17 +64,13 @@ public class HowToPlayScreen extends BaseScreen {
         // Dibuja el fondo de menú si está habilitado
         drawMenuBackgroundIfEnabled(worldW, worldH);
 
-        // Calcula el borde inferior visible de la cámara
+        // Calcula el borde inferior visible
         float uiBottom = cam.position.y - worldH / 2f;
 
-        // Dibuja el título centrado (texto localizado)
+        // Dibuja el título centrado usando el sistema de internacionalización
         drawCenteredTitle(I18n.t("how_title"), uiBottom + worldH * 0.88f);
 
-        // Dibuja el cuerpo del texto en varias líneas, centrado
-        //  - Texto obtenido desde I18n
-        //  - Posición vertical
-        //  - Ancho máximo para hacer salto de línea
-        //  - Escala y grosor de contorno definidos en BaseScreen
+        // Dibuja el cuerpo de instrucciones en varias líneas centradas
         drawCenteredMultiline(
             I18n.t("how_body"),
             uiBottom + worldH * 0.82f,
@@ -81,18 +79,17 @@ public class HowToPlayScreen extends BaseScreen {
             UI_OUTLINE_PX
         );
 
-        // Dibuja el hint inferior de volver
+        // Dibuja el texto inferior de "tocar para volver"
         drawBottomBackHintIfEnabled(worldW, worldH);
 
         batch.end();
     }
 
-    // Acción al pulsar atrás
+    // Acción que se ejecuta al pulsar atrás.
+    // Vuelve a la pantalla anterior si existe, o al menú principal.
     @Override
     protected void onBack() {
-        // Si existe pantalla anterior, vuelve a ella
         if (backScreen != null) game.setScreen(backScreen);
-            // Si no, vuelve al menú principal
         else game.setScreen(new MenuScreen(game));
     }
 }
